@@ -2,7 +2,7 @@
 <html lang="de">
 <head>
     <meta charset="UTF-8">
-    <title>OYNAME Engine - Next-Gen Game Development</title>
+    <title>OYNAME Engine</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
         * {
@@ -36,11 +36,20 @@
         }
         
         .logo {
-            font-size: 32px;
-            font-weight: bold;
-            color: white;
-            text-shadow: 0 0 10px rgba(0,120,242,0.5);
-            letter-spacing: 2px;
+            display: flex;
+            align-items: center;
+        }
+        
+        .logo img {
+            width: 275px;
+            height: 40px;
+            object-fit: contain;
+            filter: brightness(1) drop-shadow(0 0 10px rgba(0,120,242,0.3));
+            transition: filter 0.3s;
+        }
+        
+        .logo img:hover {
+            filter: brightness(1.2) drop-shadow(0 0 15px rgba(0,120,242,0.5));
         }
         
         .nav-links {
@@ -307,6 +316,11 @@
                 display: none; /* Für Mobile: Hamburger-Menu einbauen */
             }
             
+            .logo img {
+                width: 200px;
+                height: 30px;
+            }
+            
             .content {
                 padding-left: 20px;
                 padding-right: 20px;
@@ -328,12 +342,42 @@
                 left: 20px;
                 bottom: 20px;
             }
+            
+            .slide-indicators {
+                right: 20px;
+                bottom: 20px;
+            }
+        }
+
+        /* Fallback falls das Bild nicht lädt */
+        .logo img.error {
+            display: none;
+        }
+        
+        .logo img.error + .logo-fallback {
+            display: block;
+            font-size: 32px;
+            font-weight: bold;
+            color: white;
+            text-shadow: 0 0 10px rgba(0,120,242,0.5);
+            letter-spacing: 2px;
+        }
+        
+        .logo-fallback {
+            display: none;
         }
     </style>
 </head>
 <body>
     <nav class="navbar">
-        <div class="logo">OYNAME</div>
+        <div class="logo">
+            <img src="oynameengine_logo.png" 
+                 width="275" 
+                 height="40" 
+                 alt="OYNAME Engine"
+                 onerror="this.classList.add('error'); this.nextElementSibling.style.display = 'block';">
+            <div class="logo-fallback">OYNAME</div>
+        </div>
         <div class="nav-links">
             <a href="#">Architecture</a>
             <a href="#">API Reference</a>
