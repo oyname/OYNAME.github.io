@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="de">
 <head>
     <meta charset="UTF-8">
     <title>OYNAME Engine - Licensing</title>
@@ -13,9 +13,11 @@
         
         body {
             font-family: 'Arial', sans-serif;
-            overflow-x: hidden;
+            background: #0a0a0a;
+            color: white;
         }
         
+        /* Navigation - Logo links, Links zentriert in der Mitte */
         .navbar {
             position: absolute;
             top: 0;
@@ -30,487 +32,195 @@
             transition: background 0.3s;
         }
         
-        .navbar:hover {
-            background: rgba(0,0,0,0.8);
-        }
-        
-        .logo {
-            display: flex;
-            align-items: center;
-        }
-        
         .logo img {
             width: 275px;
             height: 40px;
-            object-fit: contain;
-            filter: brightness(1) drop-shadow(0 0 10px rgba(0,120,242,0.3));
-            transition: filter 0.3s;
-        }
-        
-        .logo img:hover {
-            filter: brightness(1.2) drop-shadow(0 0 15px rgba(0,120,242,0.5));
+            display: block;
         }
         
         .nav-links {
             display: flex;
             gap: 30px;
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);  /* Zentriert die Links */
         }
         
         .nav-links a {
             color: white;
             text-decoration: none;
             font-size: 14px;
-            font-weight: 500;
-            padding: 5px 0;
-            position: relative;
-            transition: color 0.3s;
-        }
-        
-        .nav-links a::after {
-            content: '';
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            width: 0;
-            height: 2px;
-            background: #0078f2;
-            transition: width 0.3s;
         }
         
         .nav-links a:hover {
             color: #0078f2;
         }
         
-        .nav-links a:hover::after {
-            width: 100%;
+        /* Platzhalter rechts für Balance (damit Logo links und Links zentriert sind) */
+        .navbar-placeholder {
+            width: 275px;  /* Gleiche Breite wie Logo */
+            visibility: hidden;
         }
         
-        .hero {
+        /* Hauptcontainer - OHNE Hero-Bild */
+        .main-container {
+            margin-top: 100px;  /* Platz für fixierte Navbar */
+            padding: 40px 20px;
             min-height: 100vh;
-            width: 100%;
-            position: relative;
-            display: flex;
-            align-items: center;
-            color: white;
-            overflow: hidden;
+            background: #0a0a0a;  /* Einfach dunkler Hintergrund */
         }
         
-        .slider {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-        }
-        
-        .slide {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-size: cover;
-            background-position: center;
-            opacity: 0;
-            transition: opacity 1.5s ease-in-out;
-            transform: scale(1.05);
-            animation: slowZoom 20s infinite alternate;
-        }
-        
-        .slide.active {
-            opacity: 1;
-        }
-        
-        @keyframes slowZoom {
-            from { transform: scale(1); }
-            to { transform: scale(1.1); }
-        }
-        
-        .overlay {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(135deg, rgba(0,0,0,0.8) 0%, rgba(0,120,242,0.3) 100%);
-            z-index: 1;
-        }
-        
-        .content {
-            position: relative;
-            z-index: 10;
-            max-width: 900px;
-            padding: 100px 50px;
-            animation: slideUp 1s ease-out;
-            background: rgba(0,0,0,0.5);
-            backdrop-filter: blur(10px);
-            border-radius: 20px;
-            margin: 120px 50px 50px 50px;
-            border: 1px solid rgba(255,255,255,0.1);
-        }
-        
-        @keyframes slideUp {
-            from {
-                opacity: 0;
-                transform: translateY(50px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-        
-        .engine-name {
-            font-size: 50px;
-            font-weight: bold;
-            margin-bottom: 30px;
-            line-height: 1.1;
-            text-shadow: 0 0 20px rgba(0,120,242,0.5);
-        }
-        
-        .engine-name span {
-            display: block;
-            font-size: 22px;
-            font-weight: 300;
-            opacity: 0.9;
-            text-shadow: 0 0 10px rgba(255,255,255,0.3);
-            margin-top: 10px;
-        }
-        
-        .license-section {
-            margin-top: 30px;
-        }
-        
-        .license-card {
-            background: rgba(255,255,255,0.1);
-            border-radius: 15px;
-            padding: 25px;
-            margin-bottom: 25px;
-            border-left: 4px solid #0078f2;
-            transition: background 0.3s;
-        }
-        
-        .license-card:hover {
-            background: rgba(255,255,255,0.12);
-        }
-        
-        .license-title {
-            font-size: 22px;
-            font-weight: bold;
-            margin-bottom: 15px;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            flex-wrap: wrap;
-        }
-        
-        .license-badge {
-            display: inline-block;
-            padding: 5px 15px;
-            border-radius: 20px;
-            font-size: 13px;
-            font-weight: bold;
-        }
-        
-        .badge-code {
-            background: #0078f2;
-            color: white;
-        }
-        
-        .badge-note {
-            background: rgba(255,255,255,0.15);
-            color: white;
-            border: 1px solid rgba(255,255,255,0.15);
-        }
-        
-        .license-text {
-            line-height: 1.8;
-            color: rgba(255,255,255,0.9);
-            font-size: 16px;
-        }
-        
-        .back-button {
-            display: inline-block;
-            padding: 12px 30px;
-            background: transparent;
-            border: 2px solid #0078f2;
-            color: white;
-            text-decoration: none;
-            border-radius: 4px;
-            margin-top: 20px;
-            transition: all 0.3s;
-        }
-        
-        .back-button:hover {
-            background: #0078f2;
-            transform: translateY(-2px);
-        }
-        
-        .game-info {
-            position: absolute;
-            bottom: 30px;
-            left: 50px;
-            z-index: 10;
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            color: white;
-            cursor: pointer;
-            padding: 10px 20px;
-            background: rgba(0,0,0,0.3);
-            border-radius: 50px;
-            backdrop-filter: blur(5px);
-            transition: all 0.3s;
-            text-decoration: none;
-        }
-        
-        .game-info:hover {
-            background: rgba(0,120,242,0.3);
-            transform: translateX(10px);
-        }
-        
-        .game-logo {
-            width: 40px;
-            height: 40px;
-            background: linear-gradient(135deg, #0078f2, #00a8f2);
+        /* Container für die Architektur */
+        .architecture-content {
+            max-width: 1000px;
+            margin: 0 auto;  /* Zentriert */
+            padding: 40px;
+            background: rgba(20, 20, 30, 0.7);
             border-radius: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 20px;
-        }
-        
-        .game-name {
-            font-size: 14px;
-            font-weight: 500;
-        }
-        
-        .slide-indicators {
-            position: absolute;
-            bottom: 30px;
-            right: 50px;
-            z-index: 10;
-            display: flex;
-            gap: 10px;
-        }
-        
-        .indicator {
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-            background: rgba(255,255,255,0.3);
-            cursor: pointer;
-            transition: all 0.3s;
-        }
-        
-        .indicator.active {
-            background: white;
-            transform: scale(1.2);
-            box-shadow: 0 0 20px white;
-        }
-        
-        .indicator:hover {
-            background: #0078f2;
-        }
-        
-        @media (max-width: 768px) {
-            .navbar {
-                padding: 20px;
-            }
-            
-            .nav-links {
-                display: none;
-            }
-            
-            .logo img {
-                width: 200px;
-                height: 30px;
-            }
-            
-            .content {
-                padding: 80px 20px 20px 20px;
-                margin: 100px 20px 20px 20px;
-            }
-            
-            .engine-name {
-                font-size: 30px;
-            }
-            
-            .engine-name span {
-                font-size: 18px;
-            }
-            
-            .license-title {
-                font-size: 20px;
-                flex-direction: column;
-                align-items: flex-start;
-            }
-            
-            .game-info {
-                left: 20px;
-                bottom: 20px;
-            }
-            
-            .slide-indicators {
-                right: 20px;
-                bottom: 20px;
-            }
+            border: 1px solid rgba(255,255,255,0.1);
+            color: white;
+            line-height: 1.6;
         }
 
-        .logo img.error {
-            display: none;
+        /* Markdown-Styling */
+        .architecture-content h1 { 
+            color: #0078f2; 
+            font-size: 2.5em; 
+            margin-bottom: 20px; 
+            border-bottom: 2px solid #0078f2;
+            padding-bottom: 10px;
         }
         
-        .logo img.error + .logo-fallback {
-            display: block;
-            font-size: 32px;
-            font-weight: bold;
-            color: white;
-            text-shadow: 0 0 10px rgba(0,120,242,0.5);
-            letter-spacing: 2px;
+        .architecture-content h2 { 
+            color: #00a8f2; 
+            margin: 40px 0 20px;
+            font-size: 2em;
         }
         
-        .logo-fallback {
-            display: none;
+        .architecture-content h3 { 
+            color: #4db8ff; 
+            margin: 30px 0 15px; 
+            font-size: 1.5em;
+        }
+        
+        .architecture-content p { 
+            margin-bottom: 20px;
+            color: #e0e0e0;
+        }
+        
+        .architecture-content code { 
+            background: #1e1e2e; 
+            padding: 2px 6px; 
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            color: #ffa657;
+        }
+        
+        .architecture-content pre { 
+            background: #1a1a24; 
+            padding: 20px; 
+            border-radius: 8px; 
+            overflow-x: auto; 
+            border-left: 4px solid #0078f2;
+            margin: 25px 0;
+        }
+        
+        .architecture-content pre code {
+            background: none;
+            color: #e0e0e0;
+            padding: 0;
+        }
+        
+        .architecture-content ul, 
+        .architecture-content ol { 
+            margin: 20px 0 20px 30px; 
+        }
+        
+        .architecture-content li {
+            margin-bottom: 10px;
+            color: #e0e0e0;
+        }
+        
+        .architecture-content a { 
+            color: #0078f2; 
+            text-decoration: none; 
+        }
+        
+        .architecture-content a:hover { 
+            text-decoration: underline; 
+        }
+        
+        .architecture-content blockquote { 
+            border-left: 4px solid #0078f2; 
+            background: rgba(0,120,242,0.1);
+            padding: 20px 25px; 
+            margin: 25px 0; 
+            border-radius: 0 8px 8px 0;
+            color: #b0b0b0;
+            font-style: italic;
+        }
+
+        /* Lade-Animation */
+        .loading {
+            text-align: center;
+            padding: 60px;
+            color: #888;
+        }
+
+        .error {
+            text-align: center;
+            padding: 60px;
+            color: #ff6b6b;
+            border: 1px solid #ff6b6b;
+            border-radius: 8px;
         }
     </style>
 </head>
 <body>
     <nav class="navbar">
         <div class="logo">
-            <a href="index.html">
-                <img src="oynameengine_logo.png" 
-                     width="275" 
-                     height="40" 
-                     alt="OYNAME Engine"
-                     onerror="this.classList.add('error'); this.nextElementSibling.style.display = 'block';">
-            </a>
-            <div class="logo-fallback">OYNAME</div>
+            <img src="oynameengine_logo.png" width="275" height="40" alt="OYNAME Engine">
         </div>
         <div class="nav-links">
-            <a href="https://oyname.github.io/index.html">Home</a>
-            <a href="#">Architecture</a>
+            <a href="index.html">Home</a>
+            <a href="architektur.html">Architecture</a>
             <a href="#">API Reference</a>
             <a href="#">Documentation</a>
             <a href="#">Learning</a>
         </div>
-        <div></div>
+        <div class="navbar-placeholder"></div> <!-- Für perfekte Balance -->
     </nav>
 
-    <div class="hero">
-        <div class="slider">
-            <div class="slide active" style="background-image: url('oyname_image1.png')"></div>
-            <div class="slide" style="background-image: url('oyname_image2.png')"></div>
-            <div class="slide" style="background-image: url('oyname_image3.png')"></div>
-            <div class="slide" style="background-image: url('oyname_image4.png')"></div>
-        </div>
-        
-        <div class="overlay"></div>
-        
-        <div class="content">
-            <div class="engine-name">
-                LEARN ABOUT LICENSING
-                <span>Licensing terms for the OYNAME Engine</span>
-            </div>
-            
-            <div class="license-section">
-                <div class="license-card">
-                    <div class="license-title">
-                        <span>Source Code</span>
-                        <span class="license-badge badge-code">MPL-2.0</span>
-                    </div>
-                    <div class="license-text">
-                        The <strong>OYNAME Engine</strong> is released under the <strong>Mozilla Public License 2.0</strong>.
-                        You may use, study, modify, and distribute the engine, including in commercial projects.
-                        <br><br>
-                        The license applies to the engine files published under MPL 2.0 and does not automatically apply
-                        to the rest of a project that uses the engine.
-                        <br><br>
-                        If you modify MPL-licensed engine files and distribute those modified files, those modified files
-                        must remain available under the <strong>MPL 2.0</strong>. Separate code created independently from
-                        those files does not automatically have to be released under the same license.
-                    </div>
-                </div>
-
-                <div class="license-card">
-                    <div class="license-title">
-                        <span>Attribution</span>
-                        <span class="license-badge badge-note">Optional</span>
-                    </div>
-                    <div class="license-text">
-                        Referencing the <strong>OYNAME Engine</strong> in your project is not required.
-                        A voluntary mention in the credits, documentation, or project page is appreciated,
-                        but it is not a condition of the license.
-                    </div>
-                </div>
-
-                <div class="license-card">
-                    <div class="license-title">
-                        <span>Warranty and Liability</span>
-                    </div>
-                    <div class="license-text">
-                        The engine is provided <strong>&quot;as is&quot;</strong>, without warranty and without liability
-                        to the extent permitted by applicable law. The full terms of the
-                        <strong>MPL 2.0</strong> remain authoritative.
-                    </div>
-                </div>
-            </div>
-            
-            <a href="index.html" class="back-button">← Back to Home</a>
-        </div>
-        
-        <a href="https://oyname.itch.io/" class="game-info">
-            <div class="game-logo">🎮</div>
-            <div class="game-name">OYNAME Studio · Our Games Here</div>
-        </a>
-
-        <div class="slide-indicators">
-            <div class="indicator active"></div>
-            <div class="indicator"></div>
-            <div class="indicator"></div>
-            <div class="indicator"></div>
+    <!-- Hauptcontainer OHNE Hero-Bild -->
+    <div class="main-container">
+        <div class="licensing-content" id="markdown-container">
+            <div class="loading">📄 Lade Lizenz-Dokument...</div>
         </div>
     </div>
 
+    <!-- Showdown für Markdown -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/showdown/2.1.0/showdown.min.js"></script>
+    
     <script>
-        let currentSlide = 0;
-        const slides = document.querySelectorAll('.slide');
-        const indicators = document.querySelectorAll('.indicator');
-        const slideCount = slides.length;
-
-        function showSlide(index) {
-            slides[currentSlide].classList.remove('active');
-            indicators[currentSlide].classList.remove('active');
-            
-            currentSlide = index;
-            
-            slides[currentSlide].classList.add('active');
-            indicators[currentSlide].classList.add('active');
-        }
-
-        function nextSlide() {
-            let nextIndex = (currentSlide + 1) % slideCount;
-            showSlide(nextIndex);
-        }
-
-        indicators.forEach((indicator, index) => {
-            indicator.addEventListener('click', () => {
-                showSlide(index);
-                clearInterval(slideInterval);
-                slideInterval = setInterval(nextSlide, 5000);
+        fetch('https://raw.githubusercontent.com/oyname/oyname.github.io/main/LICENSING.md')
+            .then(response => {
+                if (!response.ok) throw new Error('Datei nicht gefunden');
+                return response.text();
+            })
+            .then(markdown => {
+                const converter = new showdown.Converter({
+                    tables: true,
+                    ghCompatibleHeaderId: true,
+                    simplifiedAutoLink: true,
+                    strikethrough: true
+                });
+                const html = converter.makeHtml(markdown);
+                document.getElementById('markdown-container').innerHTML = html;
+            })
+            .catch(error => {
+                document.getElementById('markdown-container').innerHTML = 
+                    '<div class="error">❌ Fehler beim Laden: ' + error.message + '</div>';
             });
-        });
-
-        let slideInterval = setInterval(nextSlide, 5000);
-
-        const hero = document.querySelector('.hero');
-        hero.addEventListener('mouseenter', () => {
-            clearInterval(slideInterval);
-        });
-
-        hero.addEventListener('mouseleave', () => {
-            slideInterval = setInterval(nextSlide, 5000);
-        });
     </script>
 </body>
 </html>
