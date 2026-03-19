@@ -1,4 +1,4 @@
-# GIDX Engine API Referenz
+# OYNAME2 ENGINE API REFERENZ
 
 Diese Referenz beschreibt die nutzbare Engine-API des Snapshots **gidx26 framegraph readonly snapshot**.
 
