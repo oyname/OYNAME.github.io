@@ -37,13 +37,49 @@ function initSlider() {
     resetInterval();
 }
 
-function loadMarkdown(targetId, markdownFile) {
+function parseFrontmatter(text) {
+    const frontmatterRegex = /^---\s*([\s\S]*?)\s*---\s*([\s\S]*)$/;
+    const match = text.match(frontmatterRegex);
+
+    if (!match) {
+        return {
+            meta: {},
+            content: text
+        };
+    }
+
+    const rawMeta = match[1];
+    const content = match[2];
+    const meta = {};
+
+    rawMeta.split('\n').forEach(line => {
+        const separatorIndex = line.indexOf(':');
+        if (separatorIndex === -1) return;
+
+        const key = line.slice(0, separatorIndex).trim();
+        const value = line.slice(separatorIndex + 1).trim();
+        meta[key] = value;
+    });
+
+    return { meta, content };
+}
+
+function getExampleFileFromQuery() {
+    const params = new URLSearchParams(window.location.search);
+    return params.get('file') || 'examples/example1.md';
+}
+
+function loadExampleFromMarkdown() {
+    const markdownFile = getExampleFileFromQuery();
+
     fetch(markdownFile)
         .then(response => {
             if (!response.ok) throw new Error('Datei nicht gefunden');
             return response.text();
         })
-        .then(markdown => {
+        .then(text => {
+            const { meta, content } = parseFrontmatter(text);
+
             const converter = new showdown.Converter({
                 tables: true,
                 ghCompatibleHeaderId: true,
@@ -51,10 +87,15 @@ function loadMarkdown(targetId, markdownFile) {
                 strikethrough: true
             });
 
-            document.getElementById(targetId).innerHTML = converter.makeHtml(markdown);
+            document.getElementById('example-title').textContent = meta.title || 'Ohne Titel';
+            document.getElementById('example-image').src = meta.image || '';
+            document.getElementById('example-image').alt = meta.title || 'Beispielbild';
+            document.getElementById('example-download').href = meta.download || '#';
+            document.getElementById('example-download').textContent = meta.downloadLabel || 'Datei herunterladen';
+            document.getElementById('example-description').innerHTML = converter.makeHtml(content);
         })
         .catch(error => {
-            document.getElementById(targetId).innerHTML =
+            document.getElementById('example-description').innerHTML =
                 '<div class="error">❌ Fehler beim Laden: ' + error.message + '</div>';
         });
 }
