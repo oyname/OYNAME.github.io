@@ -1,6 +1,4 @@
-# GIDX Engine User API Overview
-
-This is the compact user-facing API overview of the engine based on the ZIP snapshot.
+# GIDX ENGINE API OVERVIEW
 
 Scope:
 - no `gidx.h`
