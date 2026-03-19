@@ -1,6 +1,6 @@
 # OYNAME2 ENGINE API REFERENZ
 
-Diese Referenz beschreibt die nutzung der Engine-API**.
+Diese Referenz beschreibt die nutzung der Engine-API.
 
 Der Fokus liegt auf dem echten Engine-Weg:
 
