@@ -220,10 +220,10 @@ body {
 }
 
 .example-item {
-    display: grid;
+    display: flex;
     grid-template-columns: 1fr 1fr;
     gap: 30px;
-    align-items: center;
+    align-items: flex-start;
     padding: 30px;
     background: rgba(255,255,255,0.04);
     border: 1px solid rgba(255,255,255,0.08);
@@ -241,6 +241,7 @@ body {
 
 .example-text h2 {
     color: #00a8f2;
+    margin-top: 0;        /* ← das fehlt */
     margin-bottom: 16px;
     font-size: 1.8em;
 }
