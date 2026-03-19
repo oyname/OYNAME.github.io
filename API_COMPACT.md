@@ -1,10 +1,5 @@
 # GIDX ENGINE API OVERVIEW
 
-Scope:
-- no `gidx.h`
-- no deep backend internals
-- only the APIs and structures you actually need to use the engine directly
-
 ---
 
 ## 1. Startup Path
