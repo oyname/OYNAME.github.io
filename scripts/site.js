@@ -70,19 +70,16 @@ function createExampleHtml(meta, htmlContent) {
             <div class="example-image">
                 <img src="${meta.image || ''}" alt="${meta.title || 'Beispielbild'}">
             </div>
-
             <div class="example-text">
                 <h2>${meta.title || 'Ohne Titel'}</h2>
                 <div class="example-description">
                     ${htmlContent}
                 </div>
-                ${
-                    meta.download
-                        ? `<a class="download-button" href="${meta.download}" download>
-                            ${meta.downloadLabel || 'Datei herunterladen'}
-                           </a>`
-                        : ''
-                }
+                ${meta.download ? `
+                    <a class="download-button" href="${meta.download}" download>
+                        ${meta.downloadLabel || 'Datei herunterladen'}
+                    </a>
+                ` : ''}
             </div>
         </section>
     `;
@@ -112,7 +109,7 @@ async function loadAllExamples() {
         });
 
         const renderedExamples = await Promise.all(
-            examples.map(async item => {
+            examples.map(async (item) => {
                 const response = await fetch(item.file);
                 if (!response.ok) {
                     throw new Error(`Datei nicht gefunden: ${item.file}`);
@@ -129,5 +126,6 @@ async function loadAllExamples() {
         container.innerHTML = renderedExamples.join('');
     } catch (error) {
         container.innerHTML = `<div class="error">❌ Fehler beim Laden: ${error.message}</div>`;
+        console.error(error);
     }
 }
