@@ -17,19 +17,18 @@
             color: white;
         }
         
-        /* Navigation - zentriert */
+        /* Navigation - Logo links, Links zentriert in der Mitte */
         .navbar {
             position: fixed;
             top: 0;
             left: 0;
             right: 0;
             display: flex;
-            justify-content: center;  /* Zentriert */
+            justify-content: space-between;  /* Logo links, Links in der Mitte */
             align-items: center;
             padding: 20px 50px;
             z-index: 150;
             background: rgba(0,0,0,0.9);
-            gap: 60px;  /* Abstand zwischen Logo und Links */
         }
         
         .logo img {
@@ -41,6 +40,9 @@
         .nav-links {
             display: flex;
             gap: 30px;
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);  /* Zentriert die Links */
         }
         
         .nav-links a {
@@ -51,6 +53,12 @@
         
         .nav-links a:hover {
             color: #0078f2;
+        }
+        
+        /* Platzhalter rechts für Balance (damit Logo links und Links zentriert sind) */
+        .navbar-placeholder {
+            width: 275px;  /* Gleiche Breite wie Logo */
+            visibility: hidden;
         }
         
         /* Hauptcontainer - OHNE Hero-Bild */
@@ -168,10 +176,10 @@
     </style>
 </head>
 <body>
-    <div class="logo">
-        <img src="oynameengine_logo.png" width="275" height="40" alt="OYNAME Engine">
-    </div>
     <nav class="navbar">
+        <div class="logo">
+            <img src="oynameengine_logo.png" width="275" height="40" alt="OYNAME Engine">
+        </div>
         <div class="nav-links">
             <a href="index.html">Home</a>
             <a href="architektur.html">Architecture</a>
@@ -179,6 +187,7 @@
             <a href="#">Documentation</a>
             <a href="#">Learning</a>
         </div>
+        <div class="navbar-placeholder"></div> <!-- Für perfekte Balance -->
     </nav>
 
     <!-- Hauptcontainer OHNE Hero-Bild -->
