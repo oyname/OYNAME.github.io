@@ -82,16 +82,20 @@ function loadMarkdown(targetId, markdownFile) {
 function parseFrontmatter(text) {
     console.log("parseFrontmatter raw:", text);
 
-    const cleanedText = text.replace(/^\uFEFF/, "").trimStart();
+    // Normalisierung: BOM entfernen + CRLF → LF + CR → LF
+    const cleanedText = text
+        .replace(/^\uFEFF/, "")
+        .replace(/\r\n/g, "\n")
+        .replace(/\r/g, "\n")
+        .trimStart();
+
     const lines = cleanedText.split("\n");
 
     if (lines[0].trim() !== "---") {
-        console.log("Kein Frontmatter-Start gefunden");
-        return {
-            meta: {},
-            content: cleanedText
-        };
+        console.log("Kein Frontmatter-Start gefunden. lines[0]:", JSON.stringify(lines[0]));
+        return { meta: {}, content: cleanedText };
     }
+
 
     let endIndex = -1;
     for (let i = 1; i < lines.length; i++) {
