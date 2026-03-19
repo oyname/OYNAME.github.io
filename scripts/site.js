@@ -80,21 +80,36 @@ function loadMarkdown(targetId, markdownFile) {
 
 /* HIER UNTEN EINFÜGEN */
 function parseFrontmatter(text) {
-    const frontmatterRegex = /^---\s*([\s\S]*?)\s*---\s*([\s\S]*)$/;
-    const match = text.match(frontmatterRegex);
+    const cleanedText = text.replace(/^\uFEFF/, '').trimStart();
+    const lines = cleanedText.split('\n');
 
-    if (!match) {
+    if (lines[0].trim() !== '---') {
         return {
             meta: {},
-            content: text
+            content: cleanedText
         };
     }
 
-    const rawMeta = match[1];
-    const content = match[2];
+    let endIndex = -1;
+    for (let i = 1; i < lines.length; i++) {
+        if (lines[i].trim() === '---') {
+            endIndex = i;
+            break;
+        }
+    }
+
+    if (endIndex === -1) {
+        return {
+            meta: {},
+            content: cleanedText
+        };
+    }
+
+    const metaLines = lines.slice(1, endIndex);
+    const content = lines.slice(endIndex + 1).join('\n').trim();
     const meta = {};
 
-    rawMeta.split('\n').forEach(line => {
+    metaLines.forEach(line => {
         const separatorIndex = line.indexOf(':');
         if (separatorIndex === -1) return;
 
