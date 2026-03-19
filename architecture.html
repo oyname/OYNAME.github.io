@@ -5,7 +5,6 @@
     <title>OYNAME Engine - Architektur</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
-        /* DEIN DESIGN - 1:1 von dir übernommen */
         * {
             margin: 0;
             padding: 0;
@@ -18,18 +17,19 @@
             color: white;
         }
         
-        /* Navigation - wie bei Unreal */
+        /* Navigation - zentriert */
         .navbar {
-            position: absolute;
+            position: fixed;
             top: 0;
             left: 0;
             right: 0;
             display: flex;
-            justify-content: space-between;
+            justify-content: center;  /* Zentriert */
             align-items: center;
             padding: 20px 50px;
             z-index: 150;
-            background: rgba(0,0,0,0.3);
+            background: rgba(0,0,0,0.9);
+            gap: 60px;  /* Abstand zwischen Logo und Links */
         }
         
         .logo img {
@@ -49,148 +49,122 @@
             font-size: 14px;
         }
         
-        /* Hero Section mit wechselnden Bildern */
-        .hero {
-            height: 100vh;
-            width: 100%;
-            position: relative;
-            display: flex;
-            align-items: center;
-            color: white;
-            overflow: hidden;
+        .nav-links a:hover {
+            color: #0078f2;
         }
         
-        .slider {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
+        /* Hauptcontainer - OHNE Hero-Bild */
+        .main-container {
+            margin-top: 100px;  /* Platz für fixierte Navbar */
+            padding: 40px 20px;
+            min-height: 100vh;
+            background: #0a0a0a;  /* Einfach dunkler Hintergrund */
         }
         
-        .slide {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-size: cover;
-            background-position: center;
-            opacity: 0;
-            transition: opacity 1s ease-in-out;
-        }
-        
-        .slide.active {
-            opacity: 1;
-        }
-        
-        .overlay {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0,0,0,0.5);
-        }
-        
-        .content {
-            position: relative;
-            z-index: 10;
-            max-width: 600px;
-            padding-left: 50px;
-        }
-        
-        .engine-name {
-            font-size: 60px;
-            font-weight: bold;
-            margin-bottom: 20px;
-            line-height: 1.1;
-        }
-        
-        .engine-name span {
-            display: block;
-            font-size: 35px;
-            font-weight: normal;
-        }
-        
-        .description {
-            font-size: 18px;
-            margin-bottom: 30px;
-            line-height: 1.6;
-            opacity: 0.9;
-        }
-        
-        .buttons {
-            display: flex;
-            gap: 20px;
-        }
-        
-        .btn {
-            padding: 15px 40px;
-            font-size: 16px;
-            font-weight: bold;
-            border: none;
-            cursor: pointer;
-            border-radius: 4px;
-        }
-        
-        .btn-primary {
-            background: #0078f2;
-            color: white;
-        }
-        
-        .btn-secondary {
-            background: transparent;
-            color: white;
-            border: 2px solid white;
-        }
-        
-        .game-info {
-            position: absolute;
-            bottom: 30px;
-            left: 50px;
-            z-index: 10;
-            display: flex;
-            align-items: center;
-            gap: 20px;
-            color: white;
-            text-decoration: none;
-        }
-        
-        .game-logo {
-            width: 50px;
-            height: 50px;
-            background: rgba(255,255,255,0.2);
-            border-radius: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        /* NEU: Container für die Architektur */
+        /* Container für die Architektur */
         .architecture-content {
             max-width: 1000px;
-            margin: 120px auto 50px;
+            margin: 0 auto;  /* Zentriert */
             padding: 40px;
-            background: rgba(0,0,0,0.7);
+            background: rgba(20, 20, 30, 0.7);
             border-radius: 10px;
-            backdrop-filter: blur(10px);
             border: 1px solid rgba(255,255,255,0.1);
             color: white;
             line-height: 1.6;
         }
 
         /* Markdown-Styling */
-        .architecture-content h1 { color: #0078f2; font-size: 2.5em; margin-bottom: 20px; }
-        .architecture-content h2 { color: #00a8f2; margin: 30px 0 15px; }
-        .architecture-content h3 { color: #4db8ff; margin: 25px 0 10px; }
-        .architecture-content p { margin-bottom: 15px; }
-        .architecture-content code { background: #1e1e2e; padding: 2px 6px; border-radius: 4px; }
-        .architecture-content pre { background: #1a1a24; padding: 15px; border-radius: 8px; overflow-x: auto; border-left: 3px solid #0078f2; }
-        .architecture-content ul, .architecture-content ol { margin: 15px 0 15px 30px; }
-        .architecture-content a { color: #0078f2; text-decoration: none; }
-        .architecture-content a:hover { text-decoration: underline; }
-        .architecture-content blockquote { border-left: 3px solid #0078f2; padding-left: 20px; margin: 20px 0; opacity: 0.8; }
+        .architecture-content h1 { 
+            color: #0078f2; 
+            font-size: 2.5em; 
+            margin-bottom: 20px; 
+            border-bottom: 2px solid #0078f2;
+            padding-bottom: 10px;
+        }
+        
+        .architecture-content h2 { 
+            color: #00a8f2; 
+            margin: 40px 0 20px;
+            font-size: 2em;
+        }
+        
+        .architecture-content h3 { 
+            color: #4db8ff; 
+            margin: 30px 0 15px; 
+            font-size: 1.5em;
+        }
+        
+        .architecture-content p { 
+            margin-bottom: 20px;
+            color: #e0e0e0;
+        }
+        
+        .architecture-content code { 
+            background: #1e1e2e; 
+            padding: 2px 6px; 
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            color: #ffa657;
+        }
+        
+        .architecture-content pre { 
+            background: #1a1a24; 
+            padding: 20px; 
+            border-radius: 8px; 
+            overflow-x: auto; 
+            border-left: 4px solid #0078f2;
+            margin: 25px 0;
+        }
+        
+        .architecture-content pre code {
+            background: none;
+            color: #e0e0e0;
+            padding: 0;
+        }
+        
+        .architecture-content ul, 
+        .architecture-content ol { 
+            margin: 20px 0 20px 30px; 
+        }
+        
+        .architecture-content li {
+            margin-bottom: 10px;
+            color: #e0e0e0;
+        }
+        
+        .architecture-content a { 
+            color: #0078f2; 
+            text-decoration: none; 
+        }
+        
+        .architecture-content a:hover { 
+            text-decoration: underline; 
+        }
+        
+        .architecture-content blockquote { 
+            border-left: 4px solid #0078f2; 
+            background: rgba(0,120,242,0.1);
+            padding: 20px 25px; 
+            margin: 25px 0; 
+            border-radius: 0 8px 8px 0;
+            color: #b0b0b0;
+            font-style: italic;
+        }
+
+        /* Lade-Animation */
+        .loading {
+            text-align: center;
+            padding: 60px;
+            color: #888;
+        }
+
+        .error {
+            text-align: center;
+            padding: 60px;
+            color: #ff6b6b;
+            border: 1px solid #ff6b6b;
+            border-radius: 8px;
+        }
     </style>
 </head>
 <body>
@@ -207,33 +181,17 @@
         </div>
     </nav>
 
-    <!-- Hero Section mit einem Bild (einfach gehalten) -->
-    <div class="hero">
-        <div class="slider">
-            <div class="slide active" style="background-image: url('oyname_image1.png')"></div>
+    <!-- Hauptcontainer OHNE Hero-Bild -->
+    <div class="main-container">
+        <div class="architecture-content" id="markdown-container">
+            <div class="loading">📄 Lade Architektur-Dokument...</div>
         </div>
-        <div class="overlay"></div>
-        <div class="content">
-            <div class="engine-name">
-                OYNAME ENGINE
-                <span>Architecture & Design</span>
-            </div>
-            <div class="description">
-                Die technische Dokumentation und Architekturübersicht der OYNAME Engine.
-            </div>
-        </div>
-    </div>
-
-    <!-- HIER KOMMT DIE MD DATEI REIN -->
-    <div class="architecture-content" id="markdown-container">
-        <div style="text-align: center; padding: 40px;">Lade Architektur-Dokument...</div>
     </div>
 
     <!-- Showdown für Markdown -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/showdown/2.1.0/showdown.min.js"></script>
     
     <script>
-        // Deine ARCHITECTURE.md von GitHub laden und anzeigen
         fetch('https://raw.githubusercontent.com/oyname/oyname.github.io/main/ARCHITECTURE.md')
             .then(response => {
                 if (!response.ok) throw new Error('Datei nicht gefunden');
@@ -242,14 +200,16 @@
             .then(markdown => {
                 const converter = new showdown.Converter({
                     tables: true,
-                    ghCompatibleHeaderId: true
+                    ghCompatibleHeaderId: true,
+                    simplifiedAutoLink: true,
+                    strikethrough: true
                 });
                 const html = converter.makeHtml(markdown);
                 document.getElementById('markdown-container').innerHTML = html;
             })
             .catch(error => {
                 document.getElementById('markdown-container').innerHTML = 
-                    '<div style="color: #ff4444; padding: 20px;">Fehler beim Laden: ' + error.message + '</div>';
+                    '<div class="error">❌ Fehler beim Laden: ' + error.message + '</div>';
             });
     </script>
 </body>
