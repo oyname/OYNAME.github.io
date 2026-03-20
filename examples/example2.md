@@ -1,10 +1,8 @@
 ---
-title: OYNAME Example 2
+title: Triangle with Vertex Colors
 image: assets/example2.png
 download: files/example2.zip
 downloadLabel: Datei herunterladen
 ---
-
-Das ist das zweite Beispiel.
-
-Hier steht die Beschreibung.
+This example creates a triangle with different vertex colors. It uses the `gidx.h` wrapper, which simplifies working with the engine for faster results.
+> **Note:** The wrapper is still under development.
