@@ -1,76 +1,123 @@
 # OYNAME2 ENGINE API REFERENCE
 
-This reference describes how to use the Engine API.
+This reference describes how to use the OYNAME Engine API.
 
-The focus is on the actual engine path:
-
-- Engine initialization
-- Window and frame loop
-- Event system and ESC behavior
+The focus is on the direct engine path:
+- engine initialization
+- window and frame loop
+- event system and input
+- DX11 adapter enumeration and context creation
+- renderer and resource API
 - ECS usage
-- Device enumeration under DX11
-- Renderer and resource API
-- Minimal startup example
-- First triangle
+- mesh and material setup
 
-Classification note:
-The engine can be used in two ways. The primary path goes through the actual engine structure with direct access to the window, backend, renderer, ECS, and resources. In addition, `gidx.h` provides a simplified layer that wraps many standard steps. This reference describes the direct path first.
+For architecture and high-level usage flow, see the API Overview.
 
 ---
 
-## 1. Architecture Overview
+## 1. Window and Engine
 
-The engine is split into several clearly separated layers:
+## `WindowDesc`
 
-### `GDXEngine`
-Top-level runtime for:
-- window loop
-- event processing
-- delta time
-- frame execution
-
-### `GDXECSRenderer`
-Central runtime API for:
-- renderer initialization
-- resource creation
-- ECS registry
-- tick callback
-- frame execution
-- render targets and post-processing
-
-### `IGDXRenderBackend`
-Abstract backend interface.
-
-### `GDXDX11RenderBackend`
-Concrete DX11 implementation.
-
-### `Registry`
-ECS storage for entities and components.
-
-### `ResourceStore<T, Tag>`
-Handle-based management for:
-- meshes
-- materials
-- shaders
-- textures
-- render targets
-- post-process resources
-
-In practice, DX11 is the real main path in the current snapshot.
-
----
-
-## 2. Initializing the Engine
-
-### 2.1 `GDXEngine`
+Used to configure the Win32 window.
 
 ```cpp
-class GDXEngine
+struct WindowDesc
+{
+    int         width      = 1280;
+    int         height     = 720;
+    std::string title      = "GDX";
+    bool        resizable  = true;
+    bool        borderless = true;
+};
+```
+
+### Fields
+- `width` — window width
+- `height` — window height
+- `title` — window title
+- `resizable` — whether the window can be resized
+- `borderless` — whether the window is borderless
+
+---
+
+## `IGDXWindow`
+
+Platform-neutral window interface.
+
+```cpp
+class IGDXWindow
 {
 public:
-    GDXEngine(std::unique_ptr<IGDXWindow> window,
-              std::unique_ptr<IGDXRenderer> renderer,
-              GDXEventQueue& events);
+    virtual ~IGDXWindow() = default;
+
+    virtual void        PollEvents() = 0;
+    virtual bool        ShouldClose() const = 0;
+    virtual int         GetWidth() const = 0;
+    virtual int         GetHeight() const = 0;
+    virtual bool        GetBorderless() const = 0;
+    virtual const char* GetTitle() const = 0;
+    virtual void        SetTitle(const char* title) = 0;
+};
+```
+
+### Functions
+- `PollEvents()` — process pending OS/window messages
+- `ShouldClose()` — returns whether the window should close
+- `GetWidth()` — current width
+- `GetHeight()` — current height
+- `GetBorderless()` — borderless state
+- `GetTitle()` — current title
+- `SetTitle(const char* title)` — sets the window title
+
+---
+
+## `GDXWin32Window`
+
+Concrete Win32 window implementation.
+
+```cpp
+class GDXWin32Window final : public IGDXWindow, public IGDXWin32NativeAccess
+{
+public:
+    GDXWin32Window(const WindowDesc& desc, GDXEventQueue& events);
+    ~GDXWin32Window() override;
+
+    bool Create();
+
+    void        PollEvents() override;
+    bool        ShouldClose() const override;
+    int         GetWidth() const override;
+    int         GetHeight() const override;
+    bool        GetBorderless() const override;
+    const char* GetTitle() const override;
+    void        SetTitle(const char* title) override;
+
+    bool QueryNativeHandles(GDXWin32NativeHandles& outHandles) const override;
+    bool IsBorderless() const override;
+};
+```
+
+### Functions
+- `GDXWin32Window(const WindowDesc& desc, GDXEventQueue& events)` — constructs the window object
+- `Create()` — creates the native Win32 window
+- inherited `IGDXWindow` functions — normal runtime window operations
+- `QueryNativeHandles(...)` — exposes Win32 handles needed for DX11 context creation
+- `IsBorderless()` — Win32-side borderless query
+
+---
+
+## `GIDXEngine`
+
+Top-level runtime loop.
+
+```cpp
+class GIDXEngine
+{
+public:
+    GIDXEngine(std::unique_ptr<IGDXWindow> window,
+               std::unique_ptr<IGDXRenderer> renderer,
+               GDXEventQueue& events);
 
     bool Initialize();
     void Run();
@@ -87,10 +134,9 @@ public:
 ```
 
 ### Purpose
+`GIDXEngine` owns the window and renderer and controls the runtime loop.
 
-`GDXEngine` owns the window and renderer and controls the runtime loop.
-
-### Important Methods
+### Functions
 
 #### `bool Initialize()`
 Initializes the engine.
@@ -98,11 +144,11 @@ Initializes the engine.
 Typical behavior:
 - validates window and renderer
 - calls `renderer->Initialize()`
-- sets the initial viewport size via `renderer->Resize(...)`
-- starts the frame timer
+- sets initial renderer size
+- starts timing state
 
 #### `void Run()`
-Main application loop. Internally calls `Step()` repeatedly.
+Runs the main loop until exit.
 
 #### `bool Step()`
 Executes exactly one frame.
@@ -112,30 +158,33 @@ Typical frame flow:
 2. poll window events
 3. compute delta time
 4. process events
-5. skip rendering if the window is minimized
+5. skip rendering if minimized
 6. otherwise:
    - `BeginFrame()`
    - `Tick(dt)`
    - `EndFrame()`
 
-Return value:
-- `true` = keep running
-- `false` = exit
+Returns:
+- `true` if execution should continue
+- `false` if the application should stop
 
 #### `float GetDeltaTime() const`
-Delta time of the last frame in seconds.
+Returns the last frame delta time in seconds.
 
 #### `float GetTotalTime() const`
-Total runtime since startup.
+Returns total runtime in seconds.
+
+#### `void SetEventCallback(EventFn fn)`
+Registers custom event handling.
 
 #### `void Shutdown()`
-Shuts the engine down cleanly. According to the header, this is idempotent, so calling it multiple times is safe.
+Clean shutdown. Safe to call multiple times.
 
 ---
 
-## 3. Event System and ESC Behavior
+## 2. Events and Input
 
-### 3.1 Event Types
+## Event Types
 
 ```cpp
 enum class Key
@@ -155,47 +204,30 @@ struct KeyReleasedEvent { Key key; };
 using Event = std::variant<QuitEvent, WindowResizedEvent, KeyPressedEvent, KeyReleasedEvent>;
 ```
 
-### 3.2 `GDXEventQueue`
+### Meaning
+- `QuitEvent` — application quit request
+- `WindowResizedEvent` — window size changed
+- `KeyPressedEvent` — key pressed
+- `KeyReleasedEvent` — key released
 
-The event queue is written by platform code and read by the engine once per frame.
-
-Purpose:
-- collect events
-- process them consistently within the frame
-
-### 3.3 ESC Behavior
-
-ESC is already handled by the engine itself. That matters: you do not necessarily need your own game-side code for it.
-
-In practice, this means:
-- `Escape` marks the application to exit
-- additional custom event code can still be registered
-
-### 3.4 Custom Event Callback
-
-```cpp
-engine.SetEventCallback([&](const Event& e)
-{
-    std::visit([&](auto&& ev)
-    {
-        using T = std::decay_t<decltype(ev)>;
-
-        if constexpr (std::is_same_v<T, KeyPressedEvent>)
-        {
-            if (ev.key == Key::Space)
-            {
-                // Custom reaction to Space
-            }
-        }
-    }, e);
-});
-```
+### ESC behavior
+ESC is already handled by the engine runtime and triggers shutdown behavior.
 
 ---
 
-## 4. Input API
+## `GDXEventQueue`
 
-### `GDXInput`
+Event queue written by platform code and consumed by the engine once per frame.
+
+### Purpose
+- collect events
+- provide consistent per-frame processing
+
+---
+
+## `GDXInput`
+
+Per-frame keyboard state API.
 
 ```cpp
 class GDXInput
@@ -210,36 +242,89 @@ public:
 };
 ```
 
-### Meaning
-
-#### `KeyDown(key)`
-The key is currently being held.
-
-#### `KeyHit(key)`
-The key was pressed in this frame.
-
-#### `KeyReleased(key)`
-The key was released in this frame.
+### Functions
+- `BeginFrame()` — resets per-frame hit/release state
+- `OnEvent(const Event& e)` — feeds an event into input state
+- `KeyDown(Key key)` — key is currently held
+- `KeyHit(Key key)` — key was pressed this frame
+- `KeyReleased(Key key)` — key was released this frame
 
 ### Example
 
 ```cpp
 if (GDXInput::KeyDown(Key::Left))
 {
-    // continuous movement to the left
+    // continuous movement
 }
 
 if (GDXInput::KeyHit(Key::Space))
 {
-    // one-shot action on press
+    // one-shot action
 }
 ```
 
 ---
 
-## 5. DX11 Device Enumeration and Context Creation
+## 3. DX11 Context Setup
 
-### `GDXWin32DX11ContextFactory`
+## `GDXDXGIAdapterInfo`
+
+Returned by adapter enumeration.
+
+```cpp
+struct GDXDXGIAdapterInfo
+{
+    unsigned int index;
+    std::wstring name;
+    size_t       dedicatedVRAM;
+    int          featureLevel;
+    std::wstring featureLevelName;
+};
+```
+
+### Fields
+- `index` — adapter index used for context creation
+- `name` — GPU name
+- `dedicatedVRAM` — dedicated VRAM in bytes
+- `featureLevel` — encoded DirectX feature level
+- `featureLevelName` — readable feature level text
+
+---
+
+## `IGDXDXGIContext`
+
+Created DX11 device/swap-chain context.
+
+```cpp
+class IGDXDXGIContext
+{
+public:
+    virtual ~IGDXDXGIContext() = default;
+
+    virtual bool              IsValid() const = 0;
+    virtual void              Present(bool vsync) = 0;
+    virtual void              Resize(int w, int h) = 0;
+    virtual GDXDXGIDeviceInfo QueryDeviceInfo() const = 0;
+
+    virtual ID3D11Device*           GetDevice() const = 0;
+    virtual ID3D11DeviceContext*    GetDeviceContext() const = 0;
+    virtual ID3D11RenderTargetView* GetRenderTarget() const = 0;
+    virtual ID3D11DepthStencilView* GetDepthStencil() const = 0;
+};
+```
+
+### Functions
+- `IsValid()` — whether the DX11 context is usable
+- `Present(bool vsync)` — presents the backbuffer
+- `Resize(int w, int h)` — resizes backbuffer/depth targets
+- `QueryDeviceInfo()` — returns active device/adapter info
+- `GetDevice()` / `GetDeviceContext()` / `GetRenderTarget()` / `GetDepthStencil()` — raw DX11 objects for backend use
+
+---
+
+## `GDXWin32DX11ContextFactory`
+
+Creates DX11 contexts for Win32 windows.
 
 ```cpp
 class GDXWin32DX11ContextFactory
@@ -256,52 +341,22 @@ public:
 };
 ```
 
-### Purpose
+### Functions
+- `EnumerateAdapters()` — returns available hardware adapters
+- `FindBestAdapter(...)` — picks the adapter with the highest feature level
+- `Create(...)` — creates the DX11 context for the selected window and adapter
 
-This factory creates a DX11 context for a Win32 window.
-
-### `EnumerateAdapters()`
-Reads available hardware adapters without permanently creating a device.
-
-Use cases:
-- display a GPU list
-- let the user choose
-- automatically select the best GPU
-
-### `FindBestAdapter(...)`
-Determines the adapter with the highest feature level.
-
-This is the fastest default path when no manual GPU selection is needed.
-
-### `Create(...)`
-Creates a DX11 context for the Win32 window and the selected adapter.
-
-Return value:
+### Return value
 - valid `IGDXDXGIContext` on success
-- `nullptr` if creation fails
-
-### Example: enumerate adapters
-
-```cpp
-auto adapters = GDXWin32DX11ContextFactory::EnumerateAdapters();
-for (size_t i = 0; i < adapters.size(); ++i)
-{
-    // print name, vendor, feature level, etc.
-}
-```
-
-### Example: choose the best adapter
-
-```cpp
-auto adapters = GDXWin32DX11ContextFactory::EnumerateAdapters();
-unsigned int bestAdapter = GDXWin32DX11ContextFactory::FindBestAdapter(adapters);
-```
+- `nullptr` on failure
 
 ---
 
-## 6. Renderer API
+## 4. Renderer Layer
 
-### 6.1 `IGDXRenderer`
+## `IGDXRenderer`
+
+Generic renderer interface used by `GIDXEngine`.
 
 ```cpp
 class IGDXRenderer
@@ -318,9 +373,36 @@ public:
 };
 ```
 
-This is the abstract base. The actual runtime work here goes through `GDXECSRenderer`.
+### Functions
+- `Initialize()` — initialize renderer resources
+- `BeginFrame()` — start frame
+- `Tick(float dt)` — per-frame update/render work
+- `EndFrame()` — finish frame and present
+- `Resize(int w, int h)` — resize handling
+- `Shutdown()` — clean shutdown
 
-### 6.2 `GDXECSRenderer`
+---
+
+## `GDXDX11RenderBackend`
+
+Concrete DX11 backend.
+
+```cpp
+class GDXDX11RenderBackend final : public IGDXRenderBackend
+{
+public:
+    explicit GDXDX11RenderBackend(std::unique_ptr<IGDXDXGIContext> context);
+};
+```
+
+### Function
+- `GDXDX11RenderBackend(...)` — wraps the DX11 context into an engine backend
+
+---
+
+## `GDXECSRenderer`
+
+Main user-facing renderer/runtime.
 
 ```cpp
 class GDXECSRenderer final : public IGDXRenderer
@@ -341,24 +423,24 @@ public:
 
     Registry& GetRegistry();
 
-    ShaderHandle   CreateShader(const std::wstring& vsFile,
-                                const std::wstring& psFile,
-                                uint32_t vertexFlags = GDX_VERTEX_DEFAULT);
+    ShaderHandle CreateShader(const std::wstring& vsFile,
+                              const std::wstring& psFile,
+                              uint32_t vertexFlags = GDX_VERTEX_DEFAULT);
 
-    ShaderHandle   CreateShader(const std::wstring& vsFile,
-                                const std::wstring& psFile,
-                                uint32_t vertexFlags,
-                                const GDXShaderLayout& layout);
+    ShaderHandle CreateShader(const std::wstring& vsFile,
+                              const std::wstring& psFile,
+                              uint32_t vertexFlags,
+                              const GDXShaderLayout& layout);
 
-    TextureHandle  LoadTexture(const std::wstring& filePath, bool isSRGB = true);
-    TextureHandle  CreateTexture(const ImageBuffer& image,
-                                 const std::wstring& debugName,
-                                 bool isSRGB = true);
+    TextureHandle LoadTexture(const std::wstring& filePath, bool isSRGB = true);
+    TextureHandle CreateTexture(const ImageBuffer& image,
+                                const std::wstring& debugName,
+                                bool isSRGB = true);
 
-    MeshHandle     UploadMesh(MeshAssetResource mesh);
+    MeshHandle UploadMesh(MeshAssetResource mesh);
     MaterialHandle CreateMaterial(MaterialResource mat);
 
-    ShaderHandle   GetDefaultShader() const;
+    ShaderHandle GetDefaultShader() const;
     void SetShadowMapSize(uint32_t size);
     void SetSceneAmbient(float r, float g, float b);
 
@@ -382,24 +464,39 @@ public:
 };
 ```
 
-### Core Responsibilities
-
-`GDXECSRenderer` is the actual high-level runtime for:
-- ECS access
+### Responsibilities
+- renderer lifecycle
+- ECS registry access
 - resource creation
-- render-frame execution
-- shader/texture/mesh/material management
-- render-to-texture and post-processing
+- render targets
+- post-processing
+- per-frame callback execution
+
+### Important functions
+- `SetTickCallback(TickFn fn)` — registers per-frame update code
+- `GetRegistry()` — returns ECS registry
+- `CreateShader(...)` — creates shader resources
+- `LoadTexture(...)` / `CreateTexture(...)` — creates textures
+- `UploadMesh(...)` — uploads a CPU mesh resource
+- `CreateMaterial(...)` — creates a material resource
+- `GetDefaultShader()` — returns default shader handle
+- `SetShadowMapSize(...)` — configures shadow map resolution
+- `SetSceneAmbient(...)` — configures ambient scene light
+- `CreateRenderTarget(...)` — creates an offscreen render target
+- `GetRenderTargetTexture(...)` — returns the texture of a render target
+- `CreatePostProcessPass(...)` — creates a post-process pass
+- `SetPostProcessConstants(...)` — updates post-process constant data
+- `SetPostProcessEnabled(...)` — enables/disables a post-process pass
+- `ClearPostProcessPasses()` — removes all post-process passes
+- `SetClearColor(...)` — sets backbuffer clear color
 
 ---
 
-## 7. Using ECS
+## 5. ECS Core
 
-### 7.1 `Registry`
+## `Registry`
 
-The `Registry` is the central ECS object.
-
-Important operations:
+Main ECS storage.
 
 ```cpp
 EntityID CreateEntity();
@@ -423,7 +520,18 @@ template<typename First, typename... Rest, typename Func>
 void View(Func&& func);
 ```
 
-### Basic Pattern
+### Functions
+- `CreateEntity()` — creates an entity
+- `DestroyEntity(EntityID id)` — destroys an entity
+- `IsAlive(EntityID id)` — checks whether an entity is valid/alive
+- `EntityCount()` — number of alive entities
+- `Add<T>(...)` — adds a component
+- `Get<T>(...)` — gets a component pointer
+- `Has<T>(...)` — checks whether the entity has a component
+- `Remove<T>(...)` — removes a component
+- `View<...>(func)` — iterates over entities that have the specified components
+
+### Example
 
 ```cpp
 Registry& registry = renderer.GetRegistry();
@@ -432,37 +540,26 @@ EntityID entity = registry.CreateEntity();
 registry.Add<TagComponent>(entity, TagComponent{"Triangle"});
 ```
 
-### Reading Components
+---
+
+## Handle Types
+
+Resource references are handle-based.
 
 ```cpp
-auto* transform = registry.Get<TransformComponent>(entity);
-if (transform)
-{
-    transform->localPosition = {0.0f, 0.0f, 5.0f};
-    transform->dirty = true;
-}
+using MeshHandle         = Handle<struct MeshTag>;
+using MaterialHandle     = Handle<struct MaterialTag>;
+using ShaderHandle       = Handle<struct ShaderTag>;
+using TextureHandle      = Handle<struct TextureTag>;
+using RenderTargetHandle = Handle<struct RenderTargetTag>;
+using PostProcessHandle  = Handle<struct PostProcessTag>;
 ```
-
-### Iterating Over Entities
-
-```cpp
-registry.View<TransformComponent, RenderableComponent>(
-    [&](EntityID id, TransformComponent& transform, RenderableComponent& renderable)
-    {
-        // all entities with these components
-    });
-```
-
-### Important
-
-The registry is handle- and component-based. Render resources themselves are not stored directly in components but referenced through handles.
 
 ---
 
-## 8. Important Components
+## 6. Important ECS Components
 
-### `TagComponent`
-Human-readable name of an entity.
+## `TagComponent`
 
 ```cpp
 struct TagComponent
@@ -471,8 +568,12 @@ struct TagComponent
 };
 ```
 
-### `TransformComponent`
-Local transform data.
+### Purpose
+Human-readable entity name.
+
+---
+
+## `TransformComponent`
 
 ```cpp
 struct TransformComponent
@@ -489,15 +590,30 @@ struct TransformComponent
 };
 ```
 
-Important:
-- contains local data only
-- the world matrix is stored separately in `WorldTransformComponent`
+### Purpose
+Stores local transform.
 
-### `WorldTransformComponent`
-Computed world matrix and inverse. Written by the transform system.
+### Important function
+- `SetEulerDeg(...)` — sets local rotation from Euler angles in degrees
 
-### `RenderableComponent`
-Links an entity to a renderable resource.
+---
+
+## `WorldTransformComponent`
+
+```cpp
+struct WorldTransformComponent
+{
+    GIDX::Float4x4 matrix;
+    GIDX::Float4x4 inverse;
+};
+```
+
+### Purpose
+Stores calculated world transform and inverse.
+
+---
+
+## `RenderableComponent`
 
 ```cpp
 struct RenderableComponent
@@ -512,8 +628,12 @@ struct RenderableComponent
 };
 ```
 
-### `VisibilityComponent`
-Visibility, activity, layer, and shadow behavior.
+### Purpose
+Connects an entity to render resources.
+
+---
+
+## `VisibilityComponent`
 
 ```cpp
 struct VisibilityComponent
@@ -529,11 +649,19 @@ struct VisibilityComponent
 };
 ```
 
-### `RenderBoundsComponent`
-Bounds used for culling.
+### Purpose
+Controls render visibility, activity, layers, and shadow behavior.
 
-### `CameraComponent`
-Projection parameters.
+---
+
+## `RenderBoundsComponent`
+
+### Purpose
+Local bounds used for culling.
+
+---
+
+## `CameraComponent`
 
 ```cpp
 struct CameraComponent
@@ -551,20 +679,227 @@ struct CameraComponent
 };
 ```
 
-### `ActiveCameraTag`
-Marks the active camera.
-
-### `RenderTargetCameraComponent`
-Camera that renders into an offscreen target.
-
-### `LightComponent`
-Lighting data for directional, point, and spot lights.
+### Purpose
+Defines camera projection and culling mask.
 
 ---
 
-## 9. Creating Resources
+## `ActiveCameraTag`
 
-### 9.1 Shaders
+```cpp
+struct ActiveCameraTag {};
+```
+
+### Purpose
+Marks the active main camera.
+
+---
+
+## `RenderTargetCameraComponent`
+
+### Purpose
+Marks a camera that renders into an offscreen render target.
+
+---
+
+## `LightComponent`
+
+```cpp
+struct LightComponent
+{
+    LightKind kind = LightKind::Directional;
+    GIDX::Float4 diffuseColor = { 1,1,1,1 };
+
+    float radius = 10.0f;
+    float intensity = 1.0f;
+
+    float innerConeAngle = 15.0f;
+    float outerConeAngle = 30.0f;
+
+    bool  castShadows = false;
+    float shadowOrthoSize = 50.0f;
+    float shadowNear = 0.1f;
+    float shadowFar = 1000.0f;
+
+    uint32_t affectLayerMask = 0xFFFFFFFFu;
+    uint32_t shadowLayerMask = 0xFFFFFFFFu;
+};
+```
+
+### Purpose
+Defines directional, point, or spot light data.
+
+---
+
+## 7. Mesh Data
+
+## `SubmeshData`
+
+```cpp
+struct SubmeshData
+{
+    std::vector<GIDX::Float3> positions;
+    std::vector<GIDX::Float3> normals;
+    std::vector<GIDX::Float2> uv0;
+    std::vector<GIDX::Float2> uv1;
+    std::vector<GIDX::Float4> tangents;
+    std::vector<GIDX::Float4> colors;
+    std::vector<uint32_t>     indices;
+
+    std::vector<GIDX::UInt4>  boneIndices;
+    std::vector<GIDX::Float4> boneWeights;
+
+    uint32_t VertexCount() const noexcept;
+    uint32_t IndexCount() const noexcept;
+    bool HasNormals() const noexcept;
+    bool HasUV0() const noexcept;
+    bool HasUV1() const noexcept;
+    bool HasTangents() const noexcept;
+    bool HasSkinning() const noexcept;
+    bool IsEmpty() const noexcept;
+    uint32_t ComputeVertexFlags() const noexcept;
+};
+```
+
+### Purpose
+CPU-side geometry for one submesh.
+
+### Rules
+- `positions` must be filled
+- `indices` may be empty for non-indexed meshes
+- optional arrays must match vertex count if used
+
+---
+
+## `MeshAssetResource`
+
+```cpp
+struct MeshAssetResource
+{
+    std::vector<SubmeshData>   submeshes;
+    std::vector<GpuMeshBuffer> gpuBuffers;
+
+    std::string debugName;
+    bool gpuReady = false;
+
+    uint32_t SubmeshCount() const noexcept;
+    bool IsEmpty() const noexcept;
+    void AddSubmesh(SubmeshData data);
+    bool IsGpuReadyAt(uint32_t i) const noexcept;
+};
+```
+
+### Purpose
+Top-level mesh resource containing one or more submeshes.
+
+### Important function
+- `AddSubmesh(SubmeshData data)` — appends a submesh before upload
+
+---
+
+## 8. Material Data
+
+## `MaterialData`
+
+```cpp
+struct MaterialData
+{
+    GIDX::Float4 baseColor;
+    GIDX::Float4 specularColor;
+    GIDX::Float4 emissiveColor;
+    GIDX::Float4 uvTilingOffset;
+    GIDX::Float4 uvDetailTilingOffset;
+    float metallic;
+    float roughness;
+    float normalScale;
+    float occlusionStrength;
+    float shininess;
+    float transparency;
+    float alphaCutoff;
+    float receiveShadows;
+    float blendMode;
+    float blendFactor;
+    uint32_t flags;
+};
+```
+
+### Purpose
+Numeric material parameters for shading.
+
+---
+
+## `MaterialResource`
+
+```cpp
+class MaterialResource
+{
+public:
+    MaterialData data;
+    ShaderHandle shader;
+
+    MaterialTextureLayerArray textureLayers{};
+
+    uint32_t sortID = 0u;
+    void* gpuConstantBuffer = nullptr;
+    bool  cpuDirty = true;
+    MaterialShadowCullMode shadowCullMode = MaterialShadowCullMode::Auto;
+
+    bool IsTransparent() const noexcept;
+    bool IsAlphaTest() const noexcept;
+    bool IsDoubleSided() const noexcept;
+    bool IsUnlit() const noexcept;
+    bool UsesPBR() const noexcept;
+    bool UsesDetailMap() const noexcept;
+
+    void SetShadowCullMode(MaterialShadowCullMode mode) noexcept;
+    void SetFlag(MaterialFlags f, bool on) noexcept;
+
+    MaterialTextureLayer& Layer(MaterialTextureSlot slot) noexcept;
+    const MaterialTextureLayer& Layer(MaterialTextureSlot slot) const noexcept;
+
+    void SetTexture(MaterialTextureSlot slot, TextureHandle texture,
+                    MaterialTextureUVSet uvSet = MaterialTextureUVSet::Auto) noexcept;
+
+    void ClearTexture(MaterialTextureSlot slot) noexcept;
+    bool HasTexture(MaterialTextureSlot slot) const noexcept;
+    TextureHandle GetTexture(MaterialTextureSlot slot) const noexcept;
+
+    void NormalizeTextureLayers() noexcept;
+    void SetDetailTiling(float tilingX, float tilingY,
+                         float offsetX = 0.0f, float offsetY = 0.0f) noexcept;
+    void SetDetailBlendMode(MaterialTextureBlendMode mode) noexcept;
+    MaterialTextureBlendMode GetDetailBlendMode() const noexcept;
+    void SetDetailBlendFactor(float factor) noexcept;
+
+    static MaterialResource FlatColor(float r, float g, float b, float a = 1.0f);
+};
+```
+
+### Important functions
+- `SetFlag(...)` — enables/disables material features
+- `SetTexture(...)` — assigns a texture to a slot
+- `ClearTexture(...)` — removes a texture
+- `HasTexture(...)` / `GetTexture(...)` — query assigned textures
+- `SetDetailTiling(...)` — set detail UV transform
+- `SetDetailBlendMode(...)` / `SetDetailBlendFactor(...)` — detail map blending
+- `FlatColor(...)` — helper for simple flat-color setup
+
+### Example flags
+- `MF_ALPHA_TEST`
+- `MF_DOUBLE_SIDED`
+- `MF_UNLIT`
+- `MF_USE_NORMAL_MAP`
+- `MF_USE_ORM_MAP`
+- `MF_USE_EMISSIVE`
+- `MF_TRANSPARENT`
+- `MF_SHADING_PBR`
+- `MF_USE_DETAIL_MAP`
+
+---
+
+## 9. Resource Creation Examples
+
+### Shader
 
 ```cpp
 ShaderHandle shader = renderer.CreateShader(
@@ -573,34 +908,26 @@ ShaderHandle shader = renderer.CreateShader(
     GDX_VERTEX_DEFAULT);
 ```
 
-Or with an explicit layout:
-
-```cpp
-ShaderHandle shader = renderer.CreateShader(vsFile, psFile, vertexFlags, customLayout);
-```
-
-### 9.2 Textures
-
-From file:
+### Texture from file
 
 ```cpp
 TextureHandle tex = renderer.LoadTexture(L"assets/albedo.png", true);
 ```
 
-From CPU image data:
+### Texture from CPU image
 
 ```cpp
 TextureHandle tex = renderer.CreateTexture(imageBuffer, L"GeneratedTexture", true);
 ```
 
-### 9.3 Meshes
+### Mesh
 
 ```cpp
 MeshAssetResource mesh = /* build mesh data */;
 MeshHandle meshHandle = renderer.UploadMesh(std::move(mesh));
 ```
 
-### 9.4 Materials
+### Material
 
 ```cpp
 MaterialResource mat{};
@@ -611,7 +938,7 @@ MaterialHandle matHandle = renderer.CreateMaterial(std::move(mat));
 
 ## 10. Render Targets and Post-Processing
 
-### Create a render target
+### Create render target
 
 ```cpp
 RenderTargetHandle rt = renderer.CreateRenderTarget(
@@ -621,13 +948,13 @@ RenderTargetHandle rt = renderer.CreateRenderTarget(
     GDXTextureFormat::RGBA8_UNORM);
 ```
 
-### Get the associated texture
+### Get render target texture
 
 ```cpp
 TextureHandle rtTexture = renderer.GetRenderTargetTexture(rt);
 ```
 
-### Create a post-process pass
+### Create post-process pass
 
 ```cpp
 PostProcessPassDesc desc{};
@@ -646,7 +973,7 @@ renderer.SetPostProcessConstants(pp, &myData, sizeof(myData));
 renderer.SetPostProcessEnabled(pp, true);
 ```
 
-### Remove all passes
+### Clear all passes
 
 ```cpp
 renderer.ClearPostProcessPasses();
@@ -654,55 +981,9 @@ renderer.ClearPostProcessPasses();
 
 ---
 
-## 11. Configuring the Renderer
-
-### Clear Color
+## 11. Minimal Initialization Example
 
 ```cpp
-renderer.SetClearColor(0.05f, 0.05f, 0.12f, 1.0f);
-```
-
-### Scene Ambient
-
-```cpp
-renderer.SetSceneAmbient(0.08f, 0.08f, 0.12f);
-```
-
-### Shadow Map Size
-
-```cpp
-renderer.SetShadowMapSize(2048);
-```
-
----
-
-## 12. Using the Tick Callback
-
-The renderer can execute game or demo update code once per frame.
-
-```cpp
-renderer.SetTickCallback([&](float dt)
-{
-    // game update, ECS changes, animation, camera, etc.
-});
-```
-
-The engine then calls `renderer.Tick(dt)` each frame.
-
----
-
-## 13. Minimal Engine Initialization
-
-This example shows the direct path through window, DX11 context, backend, renderer, and engine.
-
-```cpp
-#include "GDXEngine.h"
-#include "GDXECSRenderer.h"
-#include "GDXWin32Window.h"
-#include "GDXWin32DX11ContextFactory.h"
-#include "GDXDX11RenderBackend.h"
-#include "WindowDesc.h"
-
 int main()
 {
     GDXEventQueue events;
@@ -713,6 +994,7 @@ int main()
     desc.title = "GIDX Demo";
 
     auto window = std::make_unique<GDXWin32Window>(desc, events);
+    window->Create();
 
     auto adapters = GDXWin32DX11ContextFactory::EnumerateAdapters();
     if (adapters.empty())
@@ -721,18 +1003,14 @@ int main()
     unsigned int bestAdapter = GDXWin32DX11ContextFactory::FindBestAdapter(adapters);
 
     GDXWin32DX11ContextFactory factory;
-    auto* nativeAccess = dynamic_cast<IGDXWin32NativeAccess*>(window.get());
-    if (!nativeAccess)
-        return 1;
-
-    auto dxContext = factory.Create(*nativeAccess, bestAdapter);
+    auto dxContext = factory.Create(*window, bestAdapter);
     if (!dxContext)
         return 1;
 
     auto backend = std::make_unique<GDXDX11RenderBackend>(std::move(dxContext));
     auto renderer = std::make_unique<GDXECSRenderer>(std::move(backend));
 
-    GDXEngine engine(std::move(window), std::move(renderer), events);
+    GIDXEngine engine(std::move(window), std::move(renderer), events);
 
     if (!engine.Initialize())
         return 1;
@@ -743,101 +1021,11 @@ int main()
 }
 ```
 
-Note:
-The factory comment in the code explicitly states that the DX11 factory is designed to work directly with `IGDXWin32NativeAccess` and does not want a `dynamic_cast` dependency in the actual factory design. The cast above is therefore just a pragmatic example at the application level.
-
 ---
 
-## 14. Rendering the First Triangle
+## 12. Minimal ECS Render Path
 
-The honest answer is:
-In this engine, a raw triangle does not come from a simple immediate-mode draw call, but through the normal ECS/mesh/material path. That means at minimum you need to:
-
-1. initialize the engine
-2. create and upload a mesh
-3. create a material
-4. create a camera entity
-5. create a renderable entity
-
-### 14.1 Create the active camera
-
-```cpp
-Registry& registry = renderer.GetRegistry();
-
-EntityID camera = registry.CreateEntity();
-registry.Add<TagComponent>(camera, TagComponent{"MainCamera"});
-registry.Add<TransformComponent>(camera, TransformComponent{0.0f, 0.0f, -3.0f});
-registry.Add<WorldTransformComponent>(camera, WorldTransformComponent{});
-
-CameraComponent cam{};
-cam.fovDeg = 60.0f;
-cam.nearPlane = 0.1f;
-cam.farPlane = 100.0f;
-cam.aspectRatio = 1280.0f / 720.0f;
-registry.Add<CameraComponent>(camera, cam);
-registry.Add<ActiveCameraTag>(camera, ActiveCameraTag{});
-```
-
-### 14.2 Create the triangle mesh
-
-For this, you need a `MeshAssetResource` with exactly one submesh. The exact fields depend on `MeshAssetResource` and `SubmeshData`. The general idea is:
-
-```cpp
-MeshAssetResource mesh{};
-
-// set vertex data for 3 points
-// index data: 0, 1, 2
-// choose a matching vertex layout/flag set
-// create one submesh
-
-MeshHandle meshHandle = renderer.UploadMesh(std::move(mesh));
-```
-
-### 14.3 Create the material
-
-```cpp
-MaterialResource material{};
-// set shader/texture/material parameters
-
-MaterialHandle materialHandle = renderer.CreateMaterial(std::move(material));
-```
-
-### 14.4 Create the renderable entity
-
-```cpp
-EntityID triangle = registry.CreateEntity();
-registry.Add<TagComponent>(triangle, TagComponent{"Triangle"});
-registry.Add<TransformComponent>(triangle, TransformComponent{0.0f, 0.0f, 0.0f});
-registry.Add<WorldTransformComponent>(triangle, WorldTransformComponent{});
-registry.Add<RenderableComponent>(triangle, RenderableComponent{meshHandle, materialHandle, 0u});
-registry.Add<VisibilityComponent>(triangle, VisibilityComponent{});
-registry.Add<RenderBoundsComponent>(triangle,
-    RenderBoundsComponent::MakeSphere({0.0f, 0.0f, 0.0f}, 1.0f));
-```
-
-### 14.5 Continuous update code
-
-```cpp
-renderer.SetTickCallback([&](float dt)
-{
-    auto* t = registry.Get<TransformComponent>(triangle);
-    if (t)
-    {
-        t->SetEulerDeg(0.0f, engine.GetTotalTime() * 50.0f, 0.0f);
-        t->dirty = true;
-    }
-});
-```
-
-### Important
-
-The critical part is not engine initialization, but the exact construction of `MeshAssetResource` and `MaterialResource`. The basic principle is clear, but for a fully compilable triangle sample you need to populate both types according to their exact fields.
-
----
-
-## 15. Typical Minimal ECS Render Path
-
-For an entity to actually be visible, you usually need:
+For a visible renderable entity you typically need:
 
 - `TransformComponent`
 - `WorldTransformComponent`
@@ -851,38 +1039,3 @@ For an active camera:
 - `WorldTransformComponent`
 - `CameraComponent`
 - `ActiveCameraTag`
-
-If this baseline is missing, nothing will render even if the mesh and material exist correctly.
-
----
-
-## 16. What `gidx.h` Does Differently
-
-In addition to the direct engine API, `gidx.h` provides a simplified access layer.
-
-This is useful for:
-- quick demos
-- samples
-- simple tools
-- fast onboarding
-
-It is not the primary low-/mid-level access path, but a convenience layer that wraps parts of initialization and standard usage.
-
-If you actually want to understand or extend the engine structure, you should work with the direct path through `GDXEngine`, window, backend, and `GDXECSRenderer`.
-
----
-
-## 17. Summary
-
-Actual engine usage goes through:
-
-1. create a Win32 window
-2. enumerate DX11 adapters
-3. create a DX11 context
-4. create the backend
-5. create `GDXECSRenderer`
-6. create and initialize `GDXEngine`
-7. create ECS entities, camera, meshes, and materials
-8. run the frame loop with `Run()` or `Step()`
-
-A first visible object does not come from a naked draw call. The engine is clearly built around ECS and resource flow. That is why a first triangle is a normal mesh/material/entity setup case, not a special path.
