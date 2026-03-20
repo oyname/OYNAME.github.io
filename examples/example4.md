@@ -2,7 +2,7 @@
 title: OYNAME Example 4
 image: assets/example4.png
 download: files/example4.zip
-downloadLabel: Datei herunterladen
+downloadLabel: Download
 ---
 
 Das ist das vierte Beispiel.
