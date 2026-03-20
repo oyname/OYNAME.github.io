@@ -1,7 +1,7 @@
 [
-  { "file": "examples/example1.md" },
-  { "file": "examples/example2.md" },
-  { "file": "examples/example3.md" },
-  { "file": "examples/example4.md" },
-  { "file": "examples/example4.md"} 
+  { "file": "examples/dxadapter.md" },
+  { "file": "examples/trianglegidx.md" },
+  { "file": "examples/triangle.md" },
+  { "file": "examples/snake.md" },
+  { "file": "examples/showcase.md"} 
 ]
