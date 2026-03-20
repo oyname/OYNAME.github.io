@@ -1,6 +1,6 @@
 ---
-title: OYNAME Example 4
-image: assets/example4.png
+title: Snake Game
+image: assets/snake.png
 download: files/example4.zip
 downloadLabel: Download
 ---
