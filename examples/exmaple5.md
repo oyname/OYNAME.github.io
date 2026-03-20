@@ -1,4 +1,3 @@
-
 ---
 title: Engine Showcase
 image: assets/showcase.png
