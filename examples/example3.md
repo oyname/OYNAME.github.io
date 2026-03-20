@@ -1,10 +1,7 @@
 ---
-title: OYNAME Example 3
+title: Triangle with Vertex Colors
 image: assets/example3.png
 download: files/example3.zip
 downloadLabel: Datei herunterladen
 ---
-
-Das ist das dritte Beispiel.
-
-Hier steht die Beschreibung.
+This example creates a triangle with different vertex colors using a low-level approach instead of a high-level wrapper.
