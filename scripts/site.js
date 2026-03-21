@@ -130,7 +130,7 @@ function parseFrontmatter(text) {
 
 function createEntryHtml(meta, htmlContent) {
     return `
-        <section class="example-item ${meta.image ? '' : 'no-image'}">
+        <section class="example-item no-image">
             ${
                 meta.image
                     ? `
