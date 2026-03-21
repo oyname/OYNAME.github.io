@@ -246,7 +246,7 @@ body {
 
 .example-text h2 {
     color: #00a8f2;
-    margin-top: 0;        /* ← das fehlt */
+    margin-top: 0;
     margin-bottom: 16px;
     font-size: 1.8em;
 }
@@ -255,10 +255,6 @@ body {
     color: #e0e0e0;
     margin-bottom: 18px;
     line-height: 1.7;
-}
-
-.example-item.no-image {
-    grid-template-columns: 1fr;
 }
 
 .example-item.no-image {
