@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <title>OYNAME Engine</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <!-- Include Marked.js for Markdown parsing -->
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <style>
         * {
@@ -169,10 +168,12 @@
         .content {
             position: relative;
             z-index: 10;
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 120px 50px 80px 50px;
+            max-width: 1200px;
             width: 100%;
+            padding-left: 50px;
+            padding-right: 50px;
+            padding-top: 120px;
+            padding-bottom: 80px;
             transform: translateY(0);
             animation: slideUp 1s ease-out;
         }
@@ -194,7 +195,6 @@
             margin-bottom: 20px;
             line-height: 1.1;
             text-shadow: 0 0 20px rgba(0,120,242,0.5);
-            text-align: center;
         }
 
         .engine-name span {
@@ -210,16 +210,12 @@
             margin-bottom: 30px;
             line-height: 1.6;
             opacity: 0.9;
-            text-align: center;
-            max-width: 700px;
-            margin-left: auto;
-            margin-right: auto;
+            max-width: 600px;
         }
 
         .buttons {
             display: flex;
             gap: 20px;
-            justify-content: center;
             margin-bottom: 60px;
         }
 
@@ -262,7 +258,7 @@
             border-color: #0078f2;
         }
 
-        /* Markdown Section - im Content-Bereich unter den Buttons */
+        /* Markdown Bereich - zentriert unter den Buttons */
         .markdown-wrapper {
             max-width: 900px;
             margin: 0 auto 50px auto;
@@ -376,7 +372,7 @@
             color: #ff8a7a;
         }
 
-        /* Game Info Button - jetzt unter dem Markdown */
+        /* Game Info Button - zentriert unter Markdown */
         .game-info-bottom {
             display: inline-flex;
             align-items: center;
@@ -388,7 +384,6 @@
             border-radius: 50px;
             backdrop-filter: blur(5px);
             transition: all 0.3s;
-            margin: 0 auto;
             border: 1px solid rgba(255,255,255,0.2);
         }
 
@@ -455,7 +450,9 @@
                 display: none;
             }
             .content {
-                padding: 100px 20px 60px 20px;
+                padding-left: 20px;
+                padding-right: 20px;
+                padding-top: 100px;
             }
             .engine-name {
                 font-size: 40px;
@@ -463,9 +460,11 @@
             .engine-name span {
                 font-size: 20px;
             }
+            .description {
+                max-width: 100%;
+            }
             .buttons {
                 flex-direction: column;
-                align-items: center;
             }
             .markdown-wrapper {
                 padding: 20px;
@@ -528,16 +527,16 @@
                 <a href="license.html" class="btn btn-secondary">Learn about licensing</a>
             </div>
 
-            <!-- MARKDOWN BEREICH - direkt unter den Buttons -->
+            <!-- MARKDOWN BEREICH - zentriert unter den Buttons -->
             <div class="markdown-wrapper">
                 <div id="dynamic-markdown" class="markdown-content">
                     <div class="markdown-loading">
-                        📄 Loading documentation...
+                        📄 Loading documentation from markdown file...
                     </div>
                 </div>
             </div>
 
-            <!-- GAME INFO BUTTON - jetzt unter dem Markdown Bereich -->
+            <!-- GAME INFO BUTTON - zentriert unter dem Markdown Bereich -->
             <div class="button-wrapper">
                 <a href="https://oyname.itch.io/" class="game-info-bottom">
                     <div class="game-logo-bottom">🎮</div>
@@ -619,7 +618,7 @@
                 markdownContainer.innerHTML = `
                     <div class="markdown-error">
                         ⚠️ Markdown file "${MARKDOWN_FILE_PATH}" not found.<br/>
-                        Create this file in the same directory as this HTML file.
+                        Please create this file in the same directory as this HTML file.
                     </div>
                     <div style="margin-top: 20px;">
                         <h3>Example content for engine_details.md:</h3>
