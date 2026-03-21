@@ -128,12 +128,18 @@ function parseFrontmatter(text) {
     return { meta, content };
 }
 
-function createExampleHtml(meta, htmlContent) {
+function createEntryHtml(meta, htmlContent) {
     return `
-        <section class="example-item">
-            <div class="example-image">
-                <img src="${meta.image || ''}" alt="${meta.title || 'Beispielbild'}">
-            </div>
+        <section class="example-item ${meta.image ? '' : 'no-image'}">
+            ${
+                meta.image
+                    ? `
+                        <div class="example-image">
+                            <img src="${meta.image}" alt="${meta.title || 'Beitragsbild'}">
+                        </div>
+                    `
+                    : ''
+            }
             <div class="example-text">
                 <h2>${meta.title || 'Ohne Titel'}</h2>
                 <div class="example-description">
