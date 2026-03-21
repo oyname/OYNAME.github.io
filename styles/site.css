@@ -274,7 +274,13 @@ body {
 }
 
 .example-item.no-image .example-text h2 {
-    text-align: left;
+    text-align: left !important;
+}
+
+.example-item.no-image .example-description h1,
+.example-item.no-image .example-description h2,
+.example-item.no-image .example-description h3 {
+    text-align: left !important;
 }
 
 .example-item.no-image .example-description {
