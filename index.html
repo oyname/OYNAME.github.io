@@ -161,6 +161,18 @@
 
         .hero-text {
             max-width: 700px;
+            animation: slideUp 1s ease-out;
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(50px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
         .engine-name {
@@ -348,7 +360,7 @@
         }
 
         .example-item.no-image .example-text h2 {
-            text-align: center;
+            text-align: left;
         }
 
         .example-description {
