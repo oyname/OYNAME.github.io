@@ -261,6 +261,24 @@ body {
     grid-template-columns: 1fr;
 }
 
+.example-item.no-image {
+    display: flex;
+    justify-content: center;
+}
+
+.example-item.no-image .example-text {
+    width: 100%;
+    max-width: 900px;
+}
+
+.example-item.no-image .example-text h2 {
+    text-align: center;
+}
+
+.example-item.no-image .example-description p {
+    text-align: justify;
+}
+
 .download-button {
     display: inline-block;
     margin-top: 10px;
