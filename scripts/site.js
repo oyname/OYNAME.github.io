@@ -78,15 +78,14 @@ function loadMarkdown(targetId, markdownFile) {
         });
 }
 
-/* HIER UNTEN EINFÜGEN */
 function parseFrontmatter(text) {
-    console.log("parseFrontmatter raw:", text);
+    console.log('parseFrontmatter raw:', text);
 
-    const cleanedText = text.replace(/^\uFEFF/, "").trimStart();
-    const lines = cleanedText.split("\n");
+    const cleanedText = text.replace(/^\uFEFF/, '').trimStart();
+    const lines = cleanedText.split('\n');
 
-    if (lines[0].trim() !== "---") {
-        console.log("Kein Frontmatter-Start gefunden");
+    if (lines[0].trim() !== '---') {
+        console.log('Kein Frontmatter-Start gefunden');
         return {
             meta: {},
             content: cleanedText
@@ -95,14 +94,14 @@ function parseFrontmatter(text) {
 
     let endIndex = -1;
     for (let i = 1; i < lines.length; i++) {
-        if (lines[i].trim() === "---") {
+        if (lines[i].trim() === '---') {
             endIndex = i;
             break;
         }
     }
 
     if (endIndex === -1) {
-        console.log("Kein Frontmatter-Ende gefunden");
+        console.log('Kein Frontmatter-Ende gefunden');
         return {
             meta: {},
             content: cleanedText
@@ -110,11 +109,11 @@ function parseFrontmatter(text) {
     }
 
     const metaLines = lines.slice(1, endIndex);
-    const content = lines.slice(endIndex + 1).join("\n").trim();
+    const content = lines.slice(endIndex + 1).join('\n').trim();
     const meta = {};
 
     metaLines.forEach(line => {
-        const separatorIndex = line.indexOf(":");
+        const separatorIndex = line.indexOf(':');
         if (separatorIndex === -1) return;
 
         const key = line.slice(0, separatorIndex).trim();
@@ -122,15 +121,15 @@ function parseFrontmatter(text) {
         meta[key] = value;
     });
 
-    console.log("parseFrontmatter meta:", meta);
-    console.log("parseFrontmatter content:", content);
+    console.log('parseFrontmatter meta:', meta);
+    console.log('parseFrontmatter content:', content);
 
     return { meta, content };
 }
 
 function createEntryHtml(meta, htmlContent) {
     return `
-        <section class="example-item no-image">
+        <section class="example-item ${meta.image ? '' : 'no-image'}">
             ${
                 meta.image
                     ? `
