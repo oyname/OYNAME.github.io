@@ -263,45 +263,6 @@
             border-color: #0078f2;
         }
 
-        /* Game Info Button unten links im Hero */
-        .game-info {
-            position: absolute;
-            bottom: 30px;
-            left: 50px;
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            color: white;
-            cursor: pointer;
-            padding: 10px 20px;
-            background: rgba(0,0,0,0.3);
-            border-radius: 50px;
-            backdrop-filter: blur(5px);
-            transition: all 0.3s;
-            text-decoration: none;
-        }
-
-        .game-info:hover {
-            background: rgba(0,120,242,0.3);
-            transform: translateX(10px);
-        }
-
-        .game-logo {
-            width: 40px;
-            height: 40px;
-            background: linear-gradient(135deg, #0078f2, #00a8f2);
-            border-radius: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 20px;
-        }
-
-        .game-name {
-            font-size: 14px;
-            font-weight: 500;
-        }
-
         .slide-indicators {
             position: absolute;
             bottom: 30px;
@@ -330,28 +291,57 @@
             background: #0078f2;
         }
 
-        /* BEREICH UNTER DEM HERO - muss gescrollt werden */
+        /* BEREICH UNTER DEM HERO - leicht sichtbar, lädt zum Scrollen ein */
         .below-hero {
             position: relative;
-            background: linear-gradient(135deg, #0a0e17 0%, #0c1020 100%);
-            padding: 80px 30px 100px 30px;
+            background: linear-gradient(135deg, rgba(10,14,23,0.95) 0%, rgba(12,16,32,0.95) 100%);
+            padding: 60px 30px 80px 30px;
             width: 100%;
-            box-shadow: 0 -10px 30px rgba(0,0,0,0.5);
+            backdrop-filter: blur(2px);
+            border-top: 1px solid rgba(0,120,242,0.3);
+        }
+
+        /* Kleiner visueller Hinweis zum Scrollen */
+        .scroll-hint {
+            position: absolute;
+            top: -30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,120,242,0.8);
+            color: white;
+            padding: 8px 20px;
+            border-radius: 30px;
+            font-size: 14px;
+            font-weight: 500;
+            white-space: nowrap;
+            animation: bounce 2s infinite;
+            box-shadow: 0 0 20px rgba(0,120,242,0.5);
+        }
+
+        @keyframes bounce {
+            0%, 100% {
+                transform: translateX(-50%) translateY(0);
+            }
+            50% {
+                transform: translateX(-50%) translateY(10px);
+            }
         }
 
         .markdown-container {
             max-width: 1000px;
-            margin: 0 auto 60px auto;
-            background: rgba(18, 22, 32, 0.95);
+            margin: 0 auto 50px auto;
+            background: rgba(18, 22, 32, 0.9);
             border-radius: 28px;
             padding: 45px 55px;
             box-shadow: 0 25px 45px rgba(0,0,0,0.5), 0 0 0 1px rgba(0,120,242,0.2);
             transition: transform 0.3s ease, box-shadow 0.3s ease;
+            opacity: 0.95;
         }
 
         .markdown-container:hover {
             transform: translateY(-5px);
             box-shadow: 0 30px 55px rgba(0,0,0,0.6), 0 0 0 1px rgba(0,120,242,0.5);
+            opacity: 1;
         }
 
         .markdown-content {
@@ -461,44 +451,44 @@
             color: #ff8a7a;
         }
 
-        /* Game Button unter Markdown */
-        .game-info-large {
-            text-align: center;
-            margin-top: 20px;
-        }
-
-        .game-info-button {
-            display: inline-flex;
+        /* GAME BUTTON - NUR EINMAL, unten links im Design wie original */
+        .game-info {
+            position: absolute;
+            bottom: 30px;
+            left: 50px;
+            display: flex;
             align-items: center;
             gap: 15px;
             color: white;
-            text-decoration: none;
-            padding: 15px 35px;
-            background: linear-gradient(135deg, rgba(0,120,242,0.2), rgba(0,120,242,0.4));
-            border-radius: 60px;
+            cursor: pointer;
+            padding: 10px 20px;
+            background: rgba(0,0,0,0.3);
+            border-radius: 50px;
             backdrop-filter: blur(5px);
             transition: all 0.3s;
-            border: 1px solid rgba(0,120,242,0.5);
-            font-size: 16px;
-            font-weight: 500;
+            text-decoration: none;
+            z-index: 20;
         }
 
-        .game-info-button:hover {
-            transform: translateY(-3px);
-            background: rgba(0,120,242,0.6);
-            border-color: #0078f2;
-            box-shadow: 0 10px 25px rgba(0,120,242,0.3);
+        .game-info:hover {
+            background: rgba(0,120,242,0.3);
+            transform: translateX(10px);
         }
 
-        .game-info-button .game-logo-large {
+        .game-logo {
             width: 40px;
             height: 40px;
             background: linear-gradient(135deg, #0078f2, #00a8f2);
-            border-radius: 12px;
+            border-radius: 10px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 22px;
+            font-size: 20px;
+        }
+
+        .game-name {
+            font-size: 14px;
+            font-weight: 500;
         }
 
         @media (max-width: 768px) {
@@ -537,6 +527,11 @@
             }
             .below-hero {
                 padding: 50px 20px;
+            }
+            .scroll-hint {
+                font-size: 12px;
+                white-space: nowrap;
+                top: -25px;
             }
         }
     </style>
@@ -597,11 +592,6 @@
                 </div>
             </div>
 
-            <a href="https://oyname.itch.io/" class="game-info">
-                <div class="game-logo">🎮</div>
-                <div class="game-name">OYNAME Studio · Our Games Here</div>
-            </a>
-
             <div class="slide-indicators">
                 <div class="indicator active"></div>
                 <div class="indicator"></div>
@@ -610,22 +600,26 @@
             </div>
         </div>
 
-        <!-- Bereich UNTER dem Hero - muss der Besucher scrollen -->
+        <!-- Bereich UNTER dem Hero - Markdown und dann den Game Button -->
         <div class="below-hero">
+            <!-- Kleiner visueller Hinweis zum Scrollen -->
+            <div class="scroll-hint">
+                ↓ Scroll down for more ↓
+            </div>
+            
             <div class="markdown-container">
                 <div id="dynamic-markdown" class="markdown-content">
                     <div class="markdown-loading">
-                        📄 Loading documentation from markdown file...
+                        📄 Loading documentation...
                     </div>
                 </div>
             </div>
 
-            <div class="game-info-large">
-                <a href="https://oyname.itch.io/" class="game-info-button">
-                    <div class="game-logo-large">🎮</div>
-                    <span>OYNAME Studio · Explore Our Games</span>
-                </a>
-            </div>
+            <!-- GAME BUTTON - NUR EINMAL, unten links im original Design -->
+            <a href="https://oyname.itch.io/" class="game-info">
+                <div class="game-logo">🎮</div>
+                <div class="game-name">OYNAME Studio · Our Games Here</div>
+            </a>
         </div>
     </div>
 
