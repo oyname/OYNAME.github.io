@@ -198,7 +198,7 @@ async function loadAllExamples() {
                 const { meta, content } = parseFrontmatter(text);
                 const htmlContent = converter.makeHtml(content);
 
-                renderedExamples.push(createExampleHtml(meta, htmlContent));
+                renderedExamples.push(createEntryHtml(meta, htmlContent));
             } catch (err) {
                 renderedExamples.push(`
                     <div class="error">❌ Fehler bei ${item.file}: ${err.message}</div>
@@ -251,7 +251,7 @@ async function loadAllNews() {
                 const { meta, content } = parseFrontmatter(text);
                 const htmlContent = converter.makeHtml(content);
 
-                renderedNews.push(createExampleHtml(meta, htmlContent));
+                renderedNews.push(createEntryHtml(meta, htmlContent));
             } catch (err) {
                 renderedNews.push(`<div class="error">❌ Fehler bei ${item.file}: ${err.message}</div>`);
             }
