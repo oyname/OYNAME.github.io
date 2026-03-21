@@ -15,6 +15,7 @@
         body {
             font-family: Arial, sans-serif;
             overflow-x: hidden;
+            background-color: #0a0c10;
         }
 
         .navbar {
@@ -112,6 +113,7 @@
             visibility: hidden;
         }
 
+        /* Hero Section - genau 100vh hoch */
         .hero {
             height: 100vh;
             width: 100%;
@@ -119,17 +121,15 @@
             display: flex;
             align-items: center;
             color: white;
-            overflow-y: auto;
-            overflow-x: hidden;
+            overflow: hidden;
         }
 
         .slider {
-            position: fixed;
+            position: absolute;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            z-index: 0;
         }
 
         .slide {
@@ -156,7 +156,7 @@
         }
 
         .overlay {
-            position: fixed;
+            position: absolute;
             top: 0;
             left: 0;
             width: 100%;
@@ -168,12 +168,8 @@
         .content {
             position: relative;
             z-index: 10;
-            max-width: 1200px;
-            width: 100%;
+            max-width: 700px;
             padding-left: 50px;
-            padding-right: 50px;
-            padding-top: 120px;
-            padding-bottom: 80px;
             transform: translateY(0);
             animation: slideUp 1s ease-out;
         }
@@ -216,7 +212,6 @@
         .buttons {
             display: flex;
             gap: 20px;
-            margin-bottom: 60px;
         }
 
         .btn {
@@ -258,167 +253,50 @@
             border-color: #0078f2;
         }
 
-        /* Markdown Bereich - zentriert unter den Buttons */
-        .markdown-wrapper {
-            max-width: 900px;
-            margin: 0 auto 50px auto;
-            background: rgba(0, 0, 0, 0.6);
-            backdrop-filter: blur(10px);
-            border-radius: 20px;
-            padding: 40px;
-            border: 1px solid rgba(0,120,242,0.3);
-        }
-
-        .markdown-content {
-            color: #eef2ff;
-            font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
-            line-height: 1.65;
-        }
-
-        .markdown-content h1 {
-            font-size: 2rem;
-            font-weight: 700;
-            margin-top: 1rem;
-            margin-bottom: 1rem;
-            color: #fff;
-            border-left: 4px solid #0078f2;
-            padding-left: 20px;
-        }
-
-        .markdown-content h1:first-child {
-            margin-top: 0;
-        }
-
-        .markdown-content h2 {
-            font-size: 1.6rem;
-            font-weight: 600;
-            margin-top: 1.5rem;
-            margin-bottom: 0.8rem;
-            color: #c6e0ff;
-            border-bottom: 1px solid rgba(0,120,242,0.4);
-            padding-bottom: 8px;
-        }
-
-        .markdown-content h3 {
-            font-size: 1.3rem;
-            font-weight: 500;
-            margin-top: 1.2rem;
-            color: #b0d4ff;
-        }
-
-        .markdown-content p {
-            margin-bottom: 1rem;
-            font-size: 1rem;
-            line-height: 1.6;
-            color: #e2e8f5;
-        }
-
-        .markdown-content a {
-            color: #3b9eff;
-            text-decoration: none;
-            border-bottom: 1px dotted #3b9eff;
-        }
-
-        .markdown-content a:hover {
-            color: #7bb9ff;
-        }
-
-        .markdown-content ul, .markdown-content ol {
-            margin: 0.8rem 0 1rem 1.8rem;
-        }
-
-        .markdown-content li {
-            margin: 0.4rem 0;
-        }
-
-        .markdown-content code {
-            background: #1e2436;
-            padding: 0.2rem 0.4rem;
-            border-radius: 6px;
-            font-family: monospace;
-            font-size: 0.9rem;
-            color: #f0b27a;
-        }
-
-        .markdown-content pre {
-            background: #0c0f17;
-            padding: 1rem;
-            border-radius: 12px;
-            overflow-x: auto;
-            margin: 1rem 0;
-            border-left: 3px solid #0078f2;
-        }
-
-        .markdown-content pre code {
-            background: none;
-            padding: 0;
-        }
-
-        .markdown-content blockquote {
-            border-left: 3px solid #0078f2;
-            background: rgba(0,120,242,0.1);
-            padding: 0.6rem 1.2rem;
-            margin: 1rem 0;
-            border-radius: 8px;
-        }
-
-        .markdown-loading, .markdown-error {
-            text-align: center;
-            padding: 30px;
-            font-size: 1rem;
-        }
-
-        .markdown-error {
-            color: #ff8a7a;
-        }
-
-        /* Game Info Button - zentriert unter Markdown */
-        .game-info-bottom {
-            display: inline-flex;
+        .game-info {
+            position: absolute;
+            bottom: 30px;
+            left: 50px;
+            z-index: 10;
+            display: flex;
             align-items: center;
             gap: 15px;
             color: white;
-            text-decoration: none;
-            padding: 12px 28px;
-            background: rgba(0,0,0,0.5);
+            cursor: pointer;
+            padding: 10px 20px;
+            background: rgba(0,0,0,0.3);
             border-radius: 50px;
             backdrop-filter: blur(5px);
             transition: all 0.3s;
-            border: 1px solid rgba(255,255,255,0.2);
+            text-decoration: none;
         }
 
-        .game-info-bottom:hover {
-            background: rgba(0,120,242,0.4);
-            transform: translateY(-2px);
-            border-color: #0078f2;
+        .game-info:hover {
+            background: rgba(0,120,242,0.3);
+            transform: translateX(10px);
         }
 
-        .game-logo-bottom {
-            width: 35px;
-            height: 35px;
+        .game-logo {
+            width: 40px;
+            height: 40px;
             background: linear-gradient(135deg, #0078f2, #00a8f2);
-            border-radius: 8px;
+            border-radius: 10px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 18px;
+            font-size: 20px;
         }
 
-        .game-name-bottom {
+        .game-name {
             font-size: 14px;
             font-weight: 500;
         }
 
-        .button-wrapper {
-            text-align: center;
-            margin-top: 20px;
-        }
-
         .slide-indicators {
-            position: fixed;
+            position: absolute;
             bottom: 30px;
             right: 50px;
-            z-index: 20;
+            z-index: 10;
             display: flex;
             gap: 10px;
         }
@@ -442,6 +320,177 @@
             background: #0078f2;
         }
 
+        /* NEU: Content-Bereich UNTER dem Hero - muss gescrollt werden */
+        .below-hero {
+            position: relative;
+            z-index: 5;
+            background: linear-gradient(135deg, #0a0e17 0%, #0c1020 100%);
+            padding: 80px 30px 100px 30px;
+            width: 100%;
+        }
+
+        .markdown-container {
+            max-width: 1000px;
+            margin: 0 auto 60px auto;
+            background: rgba(18, 22, 32, 0.95);
+            border-radius: 28px;
+            padding: 45px 55px;
+            box-shadow: 0 25px 45px rgba(0,0,0,0.5), 0 0 0 1px rgba(0,120,242,0.2);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .markdown-container:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 30px 55px rgba(0,0,0,0.6), 0 0 0 1px rgba(0,120,242,0.5);
+        }
+
+        .markdown-content {
+            color: #eef2ff;
+            font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.65;
+        }
+
+        .markdown-content h1 {
+            font-size: 2.3rem;
+            font-weight: 700;
+            margin-top: 1.5rem;
+            margin-bottom: 1rem;
+            background: linear-gradient(135deg, #ffffff, #80b5ff);
+            background-clip: text;
+            -webkit-background-clip: text;
+            color: transparent;
+            border-left: 4px solid #0078f2;
+            padding-left: 20px;
+        }
+
+        .markdown-content h1:first-child {
+            margin-top: 0;
+        }
+
+        .markdown-content h2 {
+            font-size: 1.8rem;
+            font-weight: 600;
+            margin-top: 1.8rem;
+            margin-bottom: 0.8rem;
+            color: #c6e0ff;
+            border-bottom: 1px solid rgba(0,120,242,0.4);
+            padding-bottom: 8px;
+        }
+
+        .markdown-content h3 {
+            font-size: 1.4rem;
+            font-weight: 500;
+            margin-top: 1.3rem;
+            color: #b0d4ff;
+        }
+
+        .markdown-content p {
+            margin-bottom: 1.2rem;
+            font-size: 1.05rem;
+            line-height: 1.6;
+            color: #e2e8f5;
+        }
+
+        .markdown-content a {
+            color: #3b9eff;
+            text-decoration: none;
+            border-bottom: 1px dotted #3b9eff;
+        }
+
+        .markdown-content a:hover {
+            color: #7bb9ff;
+        }
+
+        .markdown-content ul, .markdown-content ol {
+            margin: 1rem 0 1.2rem 1.8rem;
+        }
+
+        .markdown-content li {
+            margin: 0.5rem 0;
+        }
+
+        .markdown-content code {
+            background: #1e2436;
+            padding: 0.2rem 0.4rem;
+            border-radius: 8px;
+            font-family: monospace;
+            font-size: 0.9rem;
+            color: #f0b27a;
+        }
+
+        .markdown-content pre {
+            background: #0c0f17;
+            padding: 1.2rem;
+            border-radius: 16px;
+            overflow-x: auto;
+            margin: 1.5rem 0;
+            border-left: 4px solid #0078f2;
+        }
+
+        .markdown-content pre code {
+            background: none;
+            padding: 0;
+        }
+
+        .markdown-content blockquote {
+            border-left: 4px solid #0078f2;
+            background: rgba(0,120,242,0.1);
+            padding: 0.8rem 1.5rem;
+            margin: 1.2rem 0;
+            border-radius: 12px;
+            font-style: italic;
+        }
+
+        .markdown-loading, .markdown-error {
+            text-align: center;
+            padding: 40px 20px;
+            font-size: 1.2rem;
+        }
+
+        .markdown-error {
+            color: #ff8a7a;
+        }
+
+        /* Game Button unter Markdown */
+        .game-info-large {
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        .game-info-button {
+            display: inline-flex;
+            align-items: center;
+            gap: 15px;
+            color: white;
+            text-decoration: none;
+            padding: 15px 35px;
+            background: linear-gradient(135deg, rgba(0,120,242,0.2), rgba(0,120,242,0.4));
+            border-radius: 60px;
+            backdrop-filter: blur(5px);
+            transition: all 0.3s;
+            border: 1px solid rgba(0,120,242,0.5);
+            font-size: 16px;
+            font-weight: 500;
+        }
+
+        .game-info-button:hover {
+            transform: translateY(-3px);
+            background: rgba(0,120,242,0.6);
+            border-color: #0078f2;
+            box-shadow: 0 10px 25px rgba(0,120,242,0.3);
+        }
+
+        .game-info-button .game-logo-large {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, #0078f2, #00a8f2);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 22px;
+        }
+
         @media (max-width: 768px) {
             .navbar {
                 padding: 20px;
@@ -452,7 +501,6 @@
             .content {
                 padding-left: 20px;
                 padding-right: 20px;
-                padding-top: 100px;
             }
             .engine-name {
                 font-size: 40px;
@@ -460,19 +508,22 @@
             .engine-name span {
                 font-size: 20px;
             }
-            .description {
-                max-width: 100%;
-            }
             .buttons {
                 flex-direction: column;
             }
-            .markdown-wrapper {
-                padding: 20px;
-                margin-bottom: 30px;
+            .game-info {
+                left: 20px;
+                bottom: 20px;
             }
             .slide-indicators {
                 right: 20px;
                 bottom: 20px;
+            }
+            .markdown-container {
+                padding: 30px 22px;
+            }
+            .below-hero {
+                padding: 50px 20px;
             }
         }
     </style>
@@ -499,6 +550,7 @@
         <div class="navbar-placeholder"></div>
     </nav>
 
+    <!-- HERO SECTION - genau eine Bildschirmhöhe -->
     <div class="hero">
         <div class="slider">
             <div class="slide active" style="background-image: url('oyname_image1.png')"></div>
@@ -526,30 +578,36 @@
                 </a>
                 <a href="license.html" class="btn btn-secondary">Learn about licensing</a>
             </div>
-
-            <!-- MARKDOWN BEREICH - zentriert unter den Buttons -->
-            <div class="markdown-wrapper">
-                <div id="dynamic-markdown" class="markdown-content">
-                    <div class="markdown-loading">
-                        📄 Loading documentation from markdown file...
-                    </div>
-                </div>
-            </div>
-
-            <!-- GAME INFO BUTTON - zentriert unter dem Markdown Bereich -->
-            <div class="button-wrapper">
-                <a href="https://oyname.itch.io/" class="game-info-bottom">
-                    <div class="game-logo-bottom">🎮</div>
-                    <div class="game-name-bottom">OYNAME Studio · Our Games Here</div>
-                </a>
-            </div>
         </div>
+
+        <a href="https://oyname.itch.io/" class="game-info">
+            <div class="game-logo">🎮</div>
+            <div class="game-name">OYNAME Studio · Our Games Here</div>
+        </a>
 
         <div class="slide-indicators">
             <div class="indicator active"></div>
             <div class="indicator"></div>
             <div class="indicator"></div>
             <div class="indicator"></div>
+        </div>
+    </div>
+
+    <!-- NEU: BEREICH UNTER DEM HERO - muss der Besucher runterscrollen -->
+    <div class="below-hero">
+        <div class="markdown-container">
+            <div id="dynamic-markdown" class="markdown-content">
+                <div class="markdown-loading">
+                    📄 Loading documentation from markdown file...
+                </div>
+            </div>
+        </div>
+
+        <div class="game-info-large">
+            <a href="https://oyname.itch.io/" class="game-info-button">
+                <div class="game-logo-large">🎮</div>
+                <span>OYNAME Studio · Explore Our Games</span>
+            </a>
         </div>
     </div>
 
@@ -621,7 +679,7 @@
                         Please create this file in the same directory as this HTML file.
                     </div>
                     <div style="margin-top: 20px;">
-                        <h3>Example content for engine_details.md:</h3>
+                        <h3>📝 Example content for engine_details.md:</h3>
                         <pre><code># OYNAME Engine Features
 
 ## Core Capabilities
@@ -631,7 +689,10 @@
 - **Built-in physics** engine
 
 ## Getting Started
-Check the documentation for quick setup guides.</code></pre>
+Check the documentation for quick setup guides.
+
+## Performance
+The engine is optimized for real-time applications with minimal overhead.</code></pre>
                     </div>
                 `;
             }
