@@ -1,0 +1,1 @@
+Engine now supports multiple lights with efficient GPU-based light culling. Forward+ architecture delivers high performance, full MSAA support, and seamless transparency. Scalable from one to hundreds of dynamic lights.
