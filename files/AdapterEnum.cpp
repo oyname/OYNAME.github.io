@@ -39,7 +39,7 @@
 #include <dxgi.h>
 
 #include "GDXWin32DX11ContextFactory.h"
-#include "Debug.h"
+#include "Core/Debug.h"
 
 #include <iostream>
 #include <iomanip>
