@@ -1,0 +1,675 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <title>OYNAME Engine - API Reference</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <!-- Markdown parser -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/9.1.6/marked.min.js"></script>
+    <!-- Syntax highlighting -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+
+    <style>
+        /* ── Reset & base ─────────────────────────────────────── */
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --bg:          #0a0a0a;
+            --bg2:         #111214;
+            --bg3:         #18191d;
+            --border:      #222428;
+            --accent:      #0078f2;
+            --accent-dim:  rgba(0,120,242,0.12);
+            --accent-glow: rgba(0,120,242,0.25);
+            --text:        #e8eaed;
+            --text-dim:    #7a8090;
+            --text-muted:  #454a55;
+            --sidebar-w:   260px;
+            --nav-h:       58px;
+            --font-ui:     'Segoe UI', system-ui, sans-serif;
+            --font-mono:   'Cascadia Code', 'Fira Code', 'Consolas', monospace;
+        }
+
+        html, body {
+            height: 100%;
+            background: var(--bg);
+            color: var(--text);
+            font-family: var(--font-ui);
+            font-size: 14px;
+            line-height: 1.6;
+            overflow: hidden;
+        }
+
+        /* ── Navbar ───────────────────────────────────────────── */
+        .navbar {
+            position: fixed;
+            top: 0; left: 0; right: 0;
+            height: var(--nav-h);
+            background: rgba(10,10,10,0.92);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 24px;
+            z-index: 100;
+        }
+
+        .navbar .logo img {
+            height: 32px;
+            display: block;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 4px;
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .nav-links a {
+            color: var(--text-dim);
+            text-decoration: none;
+            font-size: 13px;
+            padding: 5px 12px;
+            border-radius: 5px;
+            transition: color .2s, background .2s;
+        }
+
+        .nav-links a:hover { color: var(--text); background: var(--bg3); }
+        .nav-links a.active { color: var(--accent); }
+
+        /* ── Layout ───────────────────────────────────────────── */
+        .layout {
+            display: flex;
+            height: 100vh;
+            padding-top: var(--nav-h);
+        }
+
+        /* ── Sidebar ──────────────────────────────────────────── */
+        .sidebar {
+            width: var(--sidebar-w);
+            flex-shrink: 0;
+            background: var(--bg2);
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .sidebar-search {
+            padding: 12px;
+            border-bottom: 1px solid var(--border);
+            flex-shrink: 0;
+        }
+
+        .sidebar-search input {
+            width: 100%;
+            background: var(--bg3);
+            border: 1px solid var(--border);
+            color: var(--text);
+            font-size: 12px;
+            padding: 7px 10px 7px 30px;
+            border-radius: 6px;
+            outline: none;
+            font-family: var(--font-ui);
+            transition: border-color .2s;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%237a8090' stroke-width='2'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.35-4.35'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: 9px center;
+        }
+
+        .sidebar-search input:focus { border-color: var(--accent); }
+        .sidebar-search input::placeholder { color: var(--text-muted); }
+
+        .sidebar-nav {
+            overflow-y: auto;
+            flex: 1;
+            padding: 8px 0 20px;
+            scrollbar-width: thin;
+            scrollbar-color: var(--border) transparent;
+        }
+
+        .sidebar-nav::-webkit-scrollbar { width: 4px; }
+        .sidebar-nav::-webkit-scrollbar-track { background: transparent; }
+        .sidebar-nav::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+        /* Group header */
+        .nav-group-header {
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: .1em;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            padding: 16px 16px 6px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            user-select: none;
+        }
+
+        .nav-group-header::before {
+            content: '▾';
+            font-size: 10px;
+            color: var(--text-muted);
+            transition: transform .2s;
+            display: inline-block;
+        }
+
+        .nav-group.collapsed .nav-group-header::before {
+            transform: rotate(-90deg);
+        }
+
+        .nav-group-items {
+            overflow: hidden;
+            transition: max-height .25s ease;
+        }
+
+        .nav-group.collapsed .nav-group-items {
+            max-height: 0 !important;
+        }
+
+        /* Function item */
+        .nav-item {
+            display: block;
+            padding: 6px 16px 6px 24px;
+            color: var(--text-dim);
+            font-size: 13px;
+            font-family: var(--font-mono);
+            cursor: pointer;
+            border-left: 2px solid transparent;
+            margin-left: 2px;
+            transition: color .15s, background .15s, border-color .15s;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .nav-item:hover {
+            color: var(--text);
+            background: var(--bg3);
+        }
+
+        .nav-item.active {
+            color: var(--accent);
+            border-left-color: var(--accent);
+            background: var(--accent-dim);
+        }
+
+        .nav-item.hidden { display: none; }
+
+        /* ── Content panel ────────────────────────────────────── */
+        .content-area {
+            flex: 1;
+            overflow-y: auto;
+            background: var(--bg);
+            scrollbar-width: thin;
+            scrollbar-color: var(--border) transparent;
+        }
+
+        .content-area::-webkit-scrollbar { width: 6px; }
+        .content-area::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+        .content-inner {
+            max-width: 860px;
+            margin: 0 auto;
+            padding: 48px 52px 80px;
+        }
+
+        /* ── Welcome / empty state ────────────────────────────── */
+        .welcome {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 70vh;
+            text-align: center;
+            color: var(--text-muted);
+            gap: 12px;
+        }
+
+        .welcome svg { opacity: .25; }
+        .welcome h2 { font-size: 18px; font-weight: 500; color: var(--text-dim); }
+        .welcome p { font-size: 13px; max-width: 320px; line-height: 1.7; }
+
+        /* ── Markdown content styles ──────────────────────────── */
+        .md h1 {
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--text);
+            margin-bottom: 6px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid var(--border);
+            font-family: var(--font-mono);
+            letter-spacing: -.01em;
+        }
+
+        .md h2 {
+            font-size: 17px;
+            font-weight: 600;
+            color: var(--text);
+            margin: 32px 0 12px;
+            padding-bottom: 6px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .md h3 {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--accent);
+            margin: 24px 0 8px;
+            font-family: var(--font-mono);
+        }
+
+        .md p {
+            color: var(--text-dim);
+            margin-bottom: 12px;
+            line-height: 1.75;
+        }
+
+        .md a {
+            color: var(--accent);
+            text-decoration: none;
+        }
+        .md a:hover { text-decoration: underline; }
+
+        .md ul, .md ol {
+            padding-left: 20px;
+            margin-bottom: 12px;
+        }
+
+        .md li { color: var(--text-dim); margin-bottom: 4px; }
+
+        .md code {
+            font-family: var(--font-mono);
+            font-size: 12.5px;
+            background: var(--bg3);
+            color: #c8d3e0;
+            padding: 2px 6px;
+            border-radius: 4px;
+            border: 1px solid var(--border);
+        }
+
+        .md pre {
+            background: #0d1117;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 18px 20px;
+            overflow-x: auto;
+            margin: 16px 0;
+            position: relative;
+        }
+
+        .md pre code {
+            background: none;
+            border: none;
+            padding: 0;
+            font-size: 13px;
+            color: inherit;
+        }
+
+        /* Tables */
+        .md table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 16px 0;
+            font-size: 13px;
+        }
+
+        .md th {
+            background: var(--bg3);
+            color: var(--text);
+            font-weight: 600;
+            text-align: left;
+            padding: 8px 14px;
+            border: 1px solid var(--border);
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: .05em;
+        }
+
+        .md td {
+            padding: 8px 14px;
+            border: 1px solid var(--border);
+            color: var(--text-dim);
+            vertical-align: top;
+        }
+
+        .md td code { font-size: 12px; }
+
+        .md tr:hover td { background: var(--bg3); }
+
+        /* Images */
+        .md img {
+            max-width: 100%;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            margin: 12px 0;
+        }
+
+        /* em / italic captions */
+        .md em { color: var(--text-muted); font-style: italic; }
+
+        /* Horizontal rule */
+        .md hr { border: none; border-top: 1px solid var(--border); margin: 24px 0; }
+
+        /* Blockquote */
+        .md blockquote {
+            border-left: 3px solid var(--accent);
+            padding: 10px 16px;
+            background: var(--accent-dim);
+            border-radius: 0 6px 6px 0;
+            margin: 16px 0;
+            color: var(--text-dim);
+        }
+
+        /* ── Loading / error ──────────────────────────────────── */
+        .loading-msg {
+            color: var(--text-muted);
+            text-align: center;
+            padding: 80px 0;
+            font-size: 13px;
+        }
+
+        .error-msg {
+            color: #e05555;
+            background: rgba(224,85,85,.08);
+            border: 1px solid rgba(224,85,85,.25);
+            border-radius: 8px;
+            padding: 16px 20px;
+            margin: 24px 0;
+            font-size: 13px;
+        }
+
+        /* ── Breadcrumb ───────────────────────────────────────── */
+        .breadcrumb {
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-bottom: 20px;
+        }
+
+        .breadcrumb span { color: var(--text-dim); }
+
+        /* ── Responsive sidebar toggle ────────────────────────── */
+        @media (max-width: 700px) {
+            :root { --sidebar-w: 220px; }
+            .content-inner { padding: 32px 24px 60px; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- ── Navbar ──────────────────────────────────────────────────── -->
+<nav class="navbar">
+    <div class="logo">
+        <img src="oynameengine_logo.png" alt="OYNAME Engine">
+    </div>
+    <div class="nav-links">
+        <a href="index.html">Home</a>
+        <a href="architecture.html">Architecture</a>
+        <a href="apioverview.html">API Overview</a>
+        <a href="apiref.html" class="active">API Reference</a>
+        <a href="examples.html">Learning</a>
+    </div>
+    <div style="width:120px"></div>
+</nav>
+
+<!-- ── Main layout ─────────────────────────────────────────────── -->
+<div class="layout">
+
+    <!-- Sidebar -->
+    <aside class="sidebar">
+        <div class="sidebar-search">
+            <input type="text" id="searchInput" placeholder="Funktion suchen…" autocomplete="off">
+        </div>
+        <nav class="sidebar-nav" id="sidebarNav">
+            <div class="loading-msg">Lade Index…</div>
+        </nav>
+    </aside>
+
+    <!-- Content -->
+    <main class="content-area" id="contentArea">
+        <div class="content-inner">
+            <div class="welcome" id="welcomeState">
+                <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                    <polyline points="14 2 14 8 20 8"/>
+                    <line x1="16" y1="13" x2="8" y2="13"/>
+                    <line x1="16" y1="17" x2="8" y2="17"/>
+                    <polyline points="10 9 9 9 8 9"/>
+                </svg>
+                <h2>API Reference</h2>
+                <p>Wähle links eine Funktion oder Klasse aus, um die Dokumentation anzuzeigen.</p>
+            </div>
+            <div id="mdContent" style="display:none"></div>
+        </div>
+    </main>
+
+</div>
+
+<script>
+// ── Config ────────────────────────────────────────────────────────
+const INDEX_FILE   = 'api/index.md';   // Bearbeite diese Datei auf GitHub, um neue Einträge hinzuzufügen
+const DETAIL_DIR   = 'api/';           // Unterordner für die einzelnen Funktions-MD-Dateien
+
+// ── Marked setup ──────────────────────────────────────────────────
+marked.setOptions({
+    highlight: (code, lang) => {
+        if (lang && hljs.getLanguage(lang)) {
+            return hljs.highlight(code, { language: lang }).value;
+        }
+        return hljs.highlightAuto(code).value;
+    },
+    langPrefix: 'hljs language-',
+    breaks: false,
+    gfm: true
+});
+
+// Fix inter-links: [FunctionName](FunctionName) → navigates in-page
+const originalLinkRenderer = new marked.Renderer();
+const customRenderer = new marked.Renderer();
+
+customRenderer.link = function(href, title, text) {
+    // Internal cross-reference link (no extension, no http)
+    if (href && !href.startsWith('http') && !href.includes('.')) {
+        return `<a href="#${href}" class="internal-link" onclick="navigateTo('${href}');return false;">${text}</a>`;
+    }
+    return `<a href="${href}" target="_blank" rel="noopener">${text || href}</a>`;
+};
+
+// ── State ─────────────────────────────────────────────────────────
+let currentEntry = null;
+let indexData    = [];  // [{group, name, file}]
+
+// ── Parse index.md ────────────────────────────────────────────────
+function parseIndex(md) {
+    const lines   = md.split('\n');
+    const entries = [];
+    let currentGroup = 'General';
+
+    for (const raw of lines) {
+        const line = raw.trim();
+
+        // Group header: "# Window & Engine"
+        if (line.startsWith('# ')) {
+            currentGroup = line.slice(2).trim();
+            continue;
+        }
+
+        // List item: "- [FunctionName](slug)"
+        const match = line.match(/^-\s+\[([^\]]+)\]\(([^)]+)\)/);
+        if (match) {
+            entries.push({
+                group: currentGroup,
+                name:  match[1].trim(),
+                file:  DETAIL_DIR + match[2].trim() + '.md'
+            });
+        }
+    }
+    return entries;
+}
+
+// ── Build sidebar HTML ────────────────────────────────────────────
+function buildSidebar(entries) {
+    const nav = document.getElementById('sidebarNav');
+    const groups = {};
+
+    for (const e of entries) {
+        if (!groups[e.group]) groups[e.group] = [];
+        groups[e.group].push(e);
+    }
+
+    let html = '';
+    for (const [group, items] of Object.entries(groups)) {
+        const safeId = group.replace(/\s+/g, '-');
+        html += `
+            <div class="nav-group" id="group-${safeId}">
+                <div class="nav-group-header" onclick="toggleGroup('group-${safeId}')">${group}</div>
+                <div class="nav-group-items" id="items-${safeId}">`;
+
+        for (const item of items) {
+            html += `<div class="nav-item" data-name="${item.name}" data-file="${item.file}"
+                          onclick="loadEntry('${item.name}', '${item.file}')">${item.name}</div>`;
+        }
+
+        html += `</div></div>`;
+    }
+
+    nav.innerHTML = html;
+
+    // Set initial max-height for animation
+    document.querySelectorAll('.nav-group-items').forEach(el => {
+        el.style.maxHeight = el.scrollHeight + 'px';
+    });
+}
+
+// ── Toggle group collapse ─────────────────────────────────────────
+function toggleGroup(id) {
+    const group = document.getElementById(id);
+    const items = group.querySelector('.nav-group-items');
+
+    if (group.classList.contains('collapsed')) {
+        group.classList.remove('collapsed');
+        items.style.maxHeight = items.scrollHeight + 'px';
+    } else {
+        group.classList.add('collapsed');
+        items.style.maxHeight = '0';
+    }
+}
+
+// ── Load entry ────────────────────────────────────────────────────
+async function loadEntry(name, file) {
+    currentEntry = name;
+
+    // Update active state
+    document.querySelectorAll('.nav-item').forEach(el => {
+        el.classList.toggle('active', el.dataset.name === name);
+    });
+
+    // Ensure group is expanded
+    const activeItem = document.querySelector(`.nav-item[data-name="${name}"]`);
+    if (activeItem) {
+        const group = activeItem.closest('.nav-group');
+        if (group && group.classList.contains('collapsed')) {
+            toggleGroup(group.id);
+        }
+    }
+
+    // Show loading
+    const welcome = document.getElementById('welcomeState');
+    const mdContent = document.getElementById('mdContent');
+    welcome.style.display = 'none';
+    mdContent.style.display = 'block';
+    mdContent.innerHTML = `<div class="loading-msg">Lade ${name}…</div>`;
+
+    // Update URL hash without scrolling
+    history.replaceState(null, '', '#' + name);
+
+    try {
+        const res = await fetch(file);
+        if (!res.ok) throw new Error(`Datei nicht gefunden: ${file}`);
+        const md = await res.text();
+
+        // Find group for breadcrumb
+        const entry = indexData.find(e => e.name === name);
+        const group = entry ? entry.group : '';
+
+        const html = marked.parse(md, { renderer: customRenderer });
+
+        mdContent.innerHTML = `
+            <div class="breadcrumb">API Reference ${group ? '› <span>' + group + '</span>' : ''}</div>
+            <div class="md">${html}</div>`;
+
+        // Scroll to top
+        document.getElementById('contentArea').scrollTo(0, 0);
+
+        // Apply syntax highlighting
+        mdContent.querySelectorAll('pre code').forEach(block => {
+            hljs.highlightElement(block);
+        });
+
+    } catch (err) {
+        mdContent.innerHTML = `<div class="error-msg">❌ ${err.message}</div>`;
+    }
+}
+
+// ── Navigate by name (for cross-links) ───────────────────────────
+function navigateTo(name) {
+    const entry = indexData.find(e => e.name === name);
+    if (entry) loadEntry(entry.name, entry.file);
+}
+
+// ── Search ────────────────────────────────────────────────────────
+document.getElementById('searchInput').addEventListener('input', function() {
+    const q = this.value.toLowerCase().trim();
+
+    document.querySelectorAll('.nav-item').forEach(el => {
+        const matches = !q || el.dataset.name.toLowerCase().includes(q);
+        el.classList.toggle('hidden', !matches);
+    });
+
+    // Auto-expand groups that have visible results when searching
+    document.querySelectorAll('.nav-group').forEach(group => {
+        const hasVisible = [...group.querySelectorAll('.nav-item')]
+            .some(el => !el.classList.contains('hidden'));
+
+        if (q && hasVisible && group.classList.contains('collapsed')) {
+            toggleGroup(group.id);
+        }
+    });
+});
+
+// ── Init ──────────────────────────────────────────────────────────
+async function init() {
+    try {
+        const res = await fetch(INDEX_FILE);
+        if (!res.ok) throw new Error('index.md konnte nicht geladen werden');
+        const md = await res.text();
+
+        indexData = parseIndex(md);
+        buildSidebar(indexData);
+
+        // Check URL hash for direct link
+        const hash = window.location.hash.slice(1);
+        if (hash) {
+            const entry = indexData.find(e => e.name === hash);
+            if (entry) {
+                loadEntry(entry.name, entry.file);
+                return;
+            }
+        }
+
+    } catch (err) {
+        document.getElementById('sidebarNav').innerHTML =
+            `<div class="error-msg" style="margin:12px">❌ ${err.message}</div>`;
+    }
+}
+
+init();
+</script>
+</body>
+</html>
