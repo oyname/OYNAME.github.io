@@ -679,8 +679,6 @@ async function init() {
         if (hash) {
             const entry = indexData.find(e => e.name === hash);
             if (entry) loadEntry(entry.name, entry.file);
-        } else {
-            loadDefault();
         }
 
     } catch (err) {
