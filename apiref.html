@@ -664,6 +664,26 @@ async function loadDefault() {
     }
 }
     
+async function loadDefault() {
+    const welcome  = document.getElementById('welcomeState');
+    const mdContent = document.getElementById('mdContent');
+    welcome.style.display = 'none';
+    mdContent.style.display = 'block';
+
+    try {
+        const res  = await fetch('news/releasenotes.md');   // ← hier beliebige MD-Datei eintragen
+        if (!res.ok) throw new Error('');
+        const md   = await res.text();
+        const html = converter.makeHtml(md);
+        mdContent.innerHTML = `<div class="md-body">${html}</div>`;
+        mdContent.querySelectorAll('pre code').forEach(b => hljs.highlightElement(b));
+    } catch {
+        // Fallback: welcome screen bleibt
+        welcome.style.display = 'flex';
+        mdContent.style.display = 'none';
+    }
+}
+    
 // ── Init ──────────────────────────────────────────────────────────
 async function init() {
     try {
@@ -679,6 +699,8 @@ async function init() {
         if (hash) {
             const entry = indexData.find(e => e.name === hash);
             if (entry) loadEntry(entry.name, entry.file);
+        } else {
+            loadDefault();
         }
 
     } catch (err) {
