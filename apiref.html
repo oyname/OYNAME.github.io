@@ -659,12 +659,19 @@ async function loadDefault() {
         }
 
         const md = await res.text();
-        const html = converter.makeHtml(md);
-        mdContent.innerHTML = `<div class="md-body">${html}</div>`;
+        const html = marked.parse(md, { renderer: customRenderer });
 
-        mdContent.querySelectorAll('pre code').forEach(b => {
-            hljs.highlightElement(b);
+        mdContent.innerHTML = `
+            <div class="breadcrumb">API Reference › <span>News</span></div>
+            <div class="md">${html}</div>
+        `;
+
+        document.getElementById('contentArea').scrollTo(0, 0);
+
+        mdContent.querySelectorAll('pre code').forEach(block => {
+            hljs.highlightElement(block);
         });
+
     } catch (err) {
         console.error('Markdown konnte nicht geladen werden:', err);
         welcome.style.display = 'flex';
