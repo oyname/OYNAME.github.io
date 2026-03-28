@@ -1,8 +1,5 @@
 # GDX Rendering Architecture
 
-> Screenshot-Look in echtem Markdown geht nicht sauber.  
-> HTML-in-MD bricht je nach Renderer. Deshalb hier eine Version, die **überall lesbar** ist und **nicht auseinanderfällt**.
-
 ---
 
 ## Architektur-Übersicht
