@@ -1,6 +1,6 @@
-# OYNAME ENGINE API OVERVIEW
+# KROM ENGINE API OVERVIEW
 
-This document provides a high-level overview of the OYNAME Engine API.
+This document provides a high-level overview of the KROM ENGINE API.
 
 It explains the actual engine path, the main runtime layers, and the minimal concepts required to get a scene on screen.
 
