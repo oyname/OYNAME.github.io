@@ -1,6 +1,6 @@
-# OYNAME ENGINE API REFERENCE
+# KROM ENGINE API REFERENCE
 
-This reference describes how to use the OYNAME Engine API.
+This reference describes how to use the KROM ENGINE API.
 
 The focus is on the direct engine path:
 - engine initialization
