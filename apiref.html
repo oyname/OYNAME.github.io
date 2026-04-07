@@ -652,7 +652,7 @@ async function loadDefault() {
     mdContent.style.display = 'block';
 
     try {
-        const res = await fetch('news/about.md');
+        const res = await fetch('news/start.md');
 
         if (!res.ok) {
             throw new Error(`HTTP ${res.status} - ${res.statusText}`);
