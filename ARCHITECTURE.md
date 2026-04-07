@@ -2,374 +2,627 @@
 
 ## Overview
 
-This engine is a modular C++ 3D engine built around a clear separation between runtime control, scene data, render preparation and backend execution. The codebase combines an in-house ECS with a renderer that prepares frame data on the CPU and then hands a fully prepared workload to the active graphics backend. In the current state, **DX11 is the main mature backend** and defines the practical target architecture.
+KROM is a modular C++ 3D engine built around a clear separation between runtime control, scene state, frame extraction, frame preparation, frame graph compilation and backend execution.
 
-The central design idea is straightforward: the engine does not mix scene logic, visibility processing and low-level draw execution into one large path. Instead, it splits the frame into explicit stages. Scene state lives in the ECS, the renderer converts that state into per-frame render data, a prepared pass graph defines execution order and dependencies, and the backend performs the actual API-specific GPU work.
+The core design is straightforward: the engine does not mix gameplay-facing scene data, visibility processing and low-level draw execution into one large rendering path. Instead, scene state is stored in the ECS, extracted into render-facing data, prepared into frame-local workloads, compiled into an executable frame graph and then submitted through the active rendering backend.
 
-That makes the architecture easier to understand and easier to evolve. Scene systems can change without rewriting the backend, render passes can be reorganized without breaking the engine host, and API-specific execution remains isolated behind a small interface.
+That separation is one of the defining strengths of the engine.
+
+Scene state lives in `ecs::World`. Higher-level scene helpers such as `Scene` build on top of that world. The renderer does not treat ECS data as immediate draw input. It first converts relevant world state into dedicated render structures such as `SceneSnapshot` and `RenderWorld`, then builds draw queues and graph data, and finally executes the prepared frame through the backend interfaces.
+
+This gives the engine a stable and understandable architecture. Scene code can evolve without rewriting the backend layer, rendering features can be added without collapsing the runtime structure, and backend-specific execution remains isolated behind a clean interface.
+
+## Architecture Overview
+
+The following diagram shows the internal structure of the engine from the runtime layer down to backend execution.
+
+```text
++----------------------+
+|  PlatformRenderLoop  |
++----------------------+
+           |
+           v
++----------------------+
+|     RenderSystem     |
++----------------------+
+   |        |       |        |         |
+   |        |       |        |         +------------------+
+   |        |       |        |                            |
+   |        |       |        +--> +------------------+    |
+   |        |       |             |  PipelineCache   |    |
+   |        |       |             +------------------+    |
+   |        |       |                                    |
+   |        |       +--> +------------------+            |
+   |        |            | MaterialSystem   |            |
+   |        |            +------------------+            |
+   |        |                                         +----------------------+
+   |        +--> +------------------+                 | RenderFrameOrchestr. |
+   |             | GpuResourceRuntime|                +----------------------+
+   |             +------------------+                          |
+   |                                                           v
+   +--> +------------------+                     +--------------------------+
+        |  ShaderRuntime   |                     |       Frame Stages       |
+        +------------------+                     |--------------------------|
+                                                 | FrameExtractionStage     |
++----------------------+                         | FramePreparationStage    |
+|   FeatureRegistry    |                         | FrameGraphStage          |
++----------------------+                         | FrameExecutionStage      |
+                                                 +--------------------------+
+                                                              |
+                                                              v
++----------------------+     +----------------------+   +----------------------+
+|      ecs::World      | --> |    SceneSnapshot     |-> |    ECSExtractor      |
++----------------------+     +----------------------+   +----------------------+
+          |                                                      |
+          v                                                      v
++----------------------+                                +----------------------+
+|        Scene         |                                |     RenderWorld      |
++----------------------+                                +----------------------+
+                                                                      |
+                                                                      v
+                                             +---------------------------------------------+
+                                             | Backend Interfaces                           |
+                                             | IDevice / ISwapchain / ICommandList / IFence |
+                                             +---------------------------------------------+
+```
 
 ---
 
 ## High-Level Structure
 
 ```text
-KROMEngine
-  -> IGDXRenderer / GDXECSRenderer
-      -> ECS Registry + Systems
-      -> Frame preparation
-      -> Culling / Gather
-      -> Prepared frame graph
-      -> IGDXRenderBackend
-          -> DX11 / OpenGL / DX12 backend path
+PlatformRenderLoop
+  -> RenderSystem
+      -> RenderFrameOrchestrator
+          -> FrameExtractionStage
+          -> FramePreparationStage
+          -> FrameGraphStage
+          -> FrameExecutionStage
+      -> FeatureRegistry
+      -> ShaderRuntime
+      -> GpuResourceRuntime
+      -> RenderWorld
+      -> IDevice / ISwapchain / ICommandList
 ```
 
-At runtime, `KROMEngine` drives the application loop, `GDXECSRenderer` builds the frame from ECS scene data, and the selected backend executes the prepared work on the graphics API. This keeps the frame flow readable: engine host at the top, renderer logic in the middle, backend execution at the bottom.
+At runtime, `PlatformRenderLoop` drives the outer loop and platform interaction. `RenderSystem` owns the renderer-facing runtime state. `RenderFrameOrchestrator` executes the frame pipeline stage by stage. The backend interfaces execute the compiled result on the active graphics API.
+
+That gives the engine a clean top-down flow:
+
+- platform and window control at the top
+- renderer orchestration in the middle
+- backend execution at the bottom
 
 ---
 
 ## Runtime Layer
 
-The runtime layer owns the application lifecycle. It creates the window, initializes the renderer, processes events and advances the main loop.
+The runtime entry layer is `PlatformRenderLoop`.
 
 ```cpp
-class KROMEngine
+class PlatformRenderLoop
 {
 public:
-    bool Initialize();
-    void Run();
-    bool Step();
+    bool Initialize(DeviceFactory::BackendType backend,
+                    platform::IPlatform& platform,
+                    const platform::WindowDesc& windowDesc,
+                    events::EventBus* eventBus = nullptr,
+                    const IDevice::DeviceDesc& deviceDesc = {});
     void Shutdown();
 
-private:
-    std::unique_ptr<IGDXWindow>   m_window;
-    std::unique_ptr<IGDXRenderer> m_renderer;
-    GDXEventQueue& m_events;
-    GDXFrameTimer  m_frameTimer;
+    bool Tick(const ecs::World& world,
+              const MaterialSystem& materials,
+              const RenderView& view,
+              platform::IPlatformTiming& timing,
+              const rendergraph::FramePipelineCallbacks& callbacks = {});
 };
 ```
 
-This class is intentionally kept small. It does not decide how rendering works internally. Its job is to keep the engine alive, feed time and events into the renderer and handle startup and shutdown cleanly. That separation matters because it prevents rendering concerns from leaking into the platform and application host code.
+This class owns the outer application flow:
+
+- platform hookup
+- window creation
+- event pumping
+- resize handling
+- per-frame renderer execution
+
+It is intentionally kept focused. Platform and lifecycle concerns stay outside the renderer so that rendering code does not get polluted with windowing and host logic.
 
 ---
 
-## Renderer Abstraction
+## Renderer Core
 
-The renderer interface is frame-oriented and compact. It defines the basic lifecycle that every renderer backend path has to support.
+The central renderer-facing runtime object is `RenderSystem`.
 
 ```cpp
-class IGDXRenderer
+class RenderSystem
 {
 public:
-    virtual ~IGDXRenderer() = default;
+    bool Initialize(DeviceFactory::BackendType backend,
+                    platform::IWindow& window,
+                    const platform::WindowDesc& windowDesc = {},
+                    events::EventBus* eventBus = nullptr,
+                    const IDevice::DeviceDesc& deviceDesc = {});
+    void Shutdown();
 
-    virtual bool Initialize() = 0;
-    virtual void BeginFrame() = 0;
-    virtual void Tick(float dt) = 0;
-    virtual void EndFrame() = 0;
-    virtual void Resize(int w, int h) = 0;
-    virtual void Shutdown() = 0;
+    void HandleResize(uint32_t width, uint32_t height);
+    bool RenderFrame(const ecs::World& world,
+                     const MaterialSystem& materials,
+                     const RenderView& view,
+                     const platform::IPlatformTiming& timing,
+                     const rendergraph::FramePipelineCallbacks& callbacks = {});
 };
 ```
 
-The actual implementation is `GDXECSRenderer`. This class is the CPU-side render coordinator. It takes the current ECS state, prepares the active views, performs culling, gathers visible work into render queues, builds the prepared frame graph and finally submits the prepared data to the backend.
+`RenderSystem` is the CPU-side owner of the renderer. It manages the persistent rendering subsystems and delegates the actual per-frame build and execution to `RenderFrameOrchestrator`.
 
-In other words, this is where the engine turns a scene into a frame.
+Important owned systems include:
+
+- `FeatureRegistry`
+- `ShaderRuntime`
+- `GpuResourceRuntime`
+- `RenderWorld`
+- `JobSystem`
+- backend objects such as `IDevice`, `ISwapchain`, `ICommandList` and `IFence`
+
+That is a healthy split. `RenderSystem` owns renderer lifetime and major services, while frame assembly itself is handled by dedicated stage logic.
 
 ---
 
-## Backend Abstraction
+## Frame Orchestration
 
-The backend layer owns API-facing work such as resource creation, constant updates, render pass execution and presentation.
+Per-frame execution is coordinated by `RenderFrameOrchestrator`.
 
 ```cpp
-class IGDXRenderBackend
+class RenderFrameOrchestrator
 {
 public:
-    virtual bool Initialize(ResourceStore<GDXTextureResource, TextureTag>& texStore) = 0;
-    virtual void BeginFrame(const float clearColor[4]) = 0;
-    virtual void Present(bool vsync) = 0;
-    virtual void Resize(int w, int h) = 0;
-
-    virtual ShaderHandle CreateShader(... ) = 0;
-    virtual TextureHandle CreateTexture(... ) = 0;
-    virtual bool UploadMesh(MeshAssetResource& mesh) = 0;
-    virtual bool CreateMaterialGpu(MaterialResource& mat) = 0;
-
-    virtual void UpdateLights(Registry& registry, FrameData& frame) = 0;
-    virtual void UpdateFrameConstants(const FrameData& frame) = 0;
-    virtual void* ExecuteRenderPass(const BackendRenderPassDesc& passDesc,
-                                    Registry& registry,
-                                    const ICommandList& commandList,
-                                    ... ) = 0;
+    bool Execute(const RenderFrameOrchestratorContext& context,
+                 RenderFrameExecutionState& state);
 };
 ```
 
-This is one of the most important architectural boundaries in the engine:
+This is a major structural advantage of the engine.
 
-- the **renderer** decides what needs to be rendered
-- the **backend** decides how that work is executed on a specific API
+The frame is not buried inside one giant render function. Instead, it is processed through explicit stages and tracked through `RenderFrameExecutionState`.
 
-That split keeps the higher-level render pipeline independent from DX11-specific state binding and draw submission. In practice, the DX11 backend is the most complete and currently acts as the primary production path.
+That state covers steps such as:
+
+- extraction
+- frame preparation
+- shader request collection
+- material request collection
+- queue building
+- upload request collection
+- shader commit
+- material commit
+- upload commit
+- frame graph build
+- execution
+
+This makes the renderer far easier to understand, debug and extend than a monolithic one-pass architecture.
 
 ---
 
-## ECS-Centered Scene Model
+## ECS as Scene Foundation
 
-The scene is built on top of an in-house ECS. Entities are lightweight IDs, components are stored in typed pools and the registry provides typed access and iteration.
+Scene state is fundamentally ECS-driven. The core world container is `ecs::World`.
 
 ```cpp
-class Registry
+class World
 {
 public:
     EntityID CreateEntity();
     void DestroyEntity(EntityID id);
+    bool IsAlive(EntityID id) const noexcept;
 
     template<typename T, typename... Args>
     T& Add(EntityID id, Args&&... args);
 
     template<typename T>
-    T* Get(EntityID id);
+    T* Get(EntityID id) noexcept;
 
-    template<typename First, typename... Rest, typename Func>
+    template<typename T>
+    bool Has(EntityID id) const noexcept;
+
+    template<typename... Ts, typename Func>
     void View(Func&& func);
 };
 ```
 
-This model is used for transforms, cameras, mesh renderers, lights, materials and render-target camera components. The result is a data-oriented scene representation that fits the renderer well: systems can iterate exactly the components they need, and the renderer can build visibility and draw data without being tied to a rigid scene graph.
+The ECS is not just a convenience layer. It is the primary source of truth for the scene.
 
-From an architectural point of view, the ECS is not a side feature. It is the primary source of truth for the scene state that later becomes render work.
+Its implementation supports:
+
+- entity lifecycle management
+- archetype-based storage
+- typed component access
+- efficient iteration through views
+- controlled read phases for safer world access
+
+That design is important because the rendering pipeline depends on stable and structured scene data rather than ad hoc scene traversal.
 
 ---
 
-## Resource Model
+## Scene Layer
 
-GPU-facing resources are managed through typed handles and centralized stores.
+The higher-level scene helper is `Scene`.
 
 ```cpp
-template<typename T, typename Tag>
-class ResourceStore
+class Scene
 {
 public:
-    using HandleType = Handle<Tag>;
+    explicit Scene(ecs::World& world);
 
-    HandleType Add(T resource);
-    T* Get(HandleType h);
-    bool Release(HandleType h);
-    bool IsValid(HandleType h) const;
+    EntityID CreateEntity(std::string_view name = "Entity");
+    void SetParent(EntityID child, EntityID parent);
+    void DetachFromParent(EntityID child);
+
+    void PropagateTransforms();
+    void DestroyEntity(EntityID id);
+    EntityID FindByName(std::string_view name) const;
 };
 ```
 
-This model is used for meshes, materials, shaders, textures, render targets and related GPU resources. It gives the engine a predictable ownership model:
+`Scene` is a convenience layer built on top of `ecs::World`.
 
-- resources are created and stored centrally
-- systems and renderer code pass around typed handles instead of raw pointers
-- stale handle detection is possible through generations
-- lookups remain uniform across the renderer and backend
+Its responsibilities include:
 
-That makes the code safer and easier to reason about, especially in a renderer that has to deal with many interdependent objects over multiple frames.
+- entity naming
+- hierarchy management
+- transform propagation
+- scene-level creation and destruction helpers
+
+That means the ECS remains the actual data foundation, while `Scene` provides a more ergonomic way to work with scene structure.
 
 ---
 
-## Frame Pipeline
+## Extraction Boundary
 
-The renderer builds the frame in explicit stages instead of mixing scene traversal, visibility testing and draw submission together.
+One of the most important architectural boundaries in KROM is the split between live scene state and render-facing frame data.
 
-### Core pipeline phases
+This happens through structures and systems such as:
 
-- **Prepare** view data, targets, frame snapshots and pass descriptions
-- **Cull** visible objects per view and per pass type
-- **Gather** build render queues from visible sets
-- **Finalize** build execute-ready inputs
-- **Execute** submit prepared passes through the backend
+- `SceneSnapshot`
+- `ECSExtractor`
+- `RenderWorld`
 
-The central per-frame structure reflects this layout directly:
+The renderer does not work directly on mutable ECS state while preparing GPU work. Instead, it first extracts the relevant frame data into a dedicated render representation.
+
+`RenderWorld` reflects that design directly:
 
 ```cpp
-struct RendererFramePipelineData
+class RenderWorld
 {
-    FrameData frameSnapshot{};
-    ViewPassExecutionData mainView{};
-    std::vector<ViewPassExecutionData> rttViews{};
-    PreparedFrameGraph frameGraph{};
+public:
+    void Extract(const SceneSnapshot& snapshot, const MaterialSystem& materials);
+
+    void BuildDrawLists(const math::Mat4& view,
+                        const math::Mat4& viewProj,
+                        float nearZ,
+                        float farZ,
+                        const MaterialSystem& materials,
+                        uint32_t layerMask = 0xFFFFFFFFu);
+
+    void SetFrameConstants(const FrameConstants& fc);
+
+    const std::vector<RenderProxy>& GetProxies() const;
+    const std::vector<LightProxy>& GetLights() const;
+    RenderQueue& GetQueue();
 };
 ```
 
-This is important because it shows how the engine thinks about rendering. The frame is treated as prepared data, not as a chain of immediate draw calls. First the renderer determines what the frame should contain, then it executes that prepared result in a controlled order.
+This is exactly the kind of boundary a renderer needs. It keeps rendering deterministic, inspectable and easier to evolve.
 
 ---
 
-## View-Oriented Rendering
+## Frame Data Flow
 
-Each view carries the data needed for both preparation and execution.
+The next diagram shows how live scene state turns into a rendered frame.
 
-```cpp
-struct ViewPassExecutionData
-{
-    PreparedViewData prepared{};
-    PreparedExecuteData execute{};
-    ViewExecutionStats stats{};
-    VisibleSet graphicsVisibleSet{};
-    VisibleSet shadowVisibleSet{};
-    std::vector<RenderGatherSystem::GatherChunkResult> graphicsGatherChunks{};
-    std::vector<RenderGatherSystem::GatherChunkResult> shadowGatherChunks{};
-    RenderQueue opaqueQueue{};
-    RenderQueue transparentQueue{};
-    RenderQueue shadowQueue{};
-};
+```text
++------------+     +---------------+     +--------------+     +-------------+
+| ecs::World | --> | SceneSnapshot | --> | ECSExtractor | --> | RenderWorld |
++------------+     +---------------+     +--------------+     +-------------+
+                                                                  |
+                                                                  v
+                                                           +-------------+
+                                                           | RenderQueue |
+                                                           +-------------+
+                                                                  |
+                                                                  v
+                                                     +------------------------+
+                                                     | RenderGraph / Pipeline |
+                                                     +------------------------+
+                                                                  |
+                                                                  v
+                                                     +------------------------+
+                                                     | FrameExecutionStage    |
+                                                     +------------------------+
+                                                                  |
+                                                                  v
+                                            +-----------------------------------------------+
+                                            | IDevice / ICommandList / ISwapchain / Present |
+                                            +-----------------------------------------------+
+                                                                  |
+                                                                  v
+                                                         +----------------+
+                                                         | Final Image    |
+                                                         +----------------+
 ```
 
-This gives the pipeline a clear view-oriented structure. Instead of producing one large global queue blob, the renderer handles the main view and each render-target view as separate processing units. Each one can have its own prepared state, visibility results and render queues.
+The mental model is simple:
 
-That is especially useful for offscreen rendering, shadow passes and future view extensions. It keeps the pipeline modular and prevents special-case logic from collapsing into one monolithic render path.
+1. scene state lives in the ECS
+2. extraction builds stable frame-local data
+3. render preparation builds queues and frame inputs
+4. graph compilation defines executable frame order
+5. the backend executes and presents the final image
 
 ---
 
-## Main View and Render-Target Views
+## Render Representation
 
-The split between the main camera and render-target views is explicit in the task setup:
+The extracted render state is built from lightweight render-facing proxy structures.
+
+### RenderProxy
 
 ```cpp
-m_systemScheduler.AddTask({ "Prepare Main View",
-    SR_FRAME | SR_STATS,
-    SR_MAIN_VIEW,
-    [this]() { PrepareMainViewData(m_renderPipeline.frameSnapshot, m_renderPipeline.mainView); } });
-
-m_systemScheduler.AddTask({ "Prepare RTT Views",
-    SR_FRAME | SR_STATS,
-    SR_RTT_VIEWS,
-    [this]() { PrepareRenderTargetViewData(m_renderPipeline.frameSnapshot, m_renderPipeline.rttViews); } });
+struct RenderProxy
+{
+    EntityID       entity;
+    MeshHandle     mesh;
+    MaterialHandle material;
+    math::Mat4     worldMatrix;
+    math::Mat4     worldMatrixInvT;
+    math::Vec3     boundsCenter;
+    math::Vec3     boundsExtents;
+    float          boundsRadius = 1.f;
+    uint32_t       layerMask    = 0xFFFFFFFFu;
+    bool           castShadows  = true;
+    bool           visible      = true;
+};
 ```
 
-This separation continues through culling, gather and execution. That matters because the main presentation path, offscreen rendering and shadow-related views do not share identical requirements. Treating them as independent units keeps the render flow easier to understand and makes it simpler to add more view types later.
+### LightProxy
+
+```cpp
+struct LightProxy
+{
+    EntityID   entity;
+    LightType  lightType;
+    math::Vec3 positionWorld;
+    math::Vec3 directionWorld;
+    math::Vec3 color;
+    float      intensity   = 1.f;
+    float      range       = 10.f;
+    float      spotInner   = 0.f;
+    float      spotOuter   = 0.f;
+    bool       castShadows = false;
+};
+```
+
+These structures are intentionally flat and render-oriented. They let the renderer operate on stable frame data instead of live scene component state.
 
 ---
 
-## Prepared Frame Graph
+## Queue-Oriented Render Preparation
 
-The engine uses a prepared pass graph with explicit logical resource references and a validated execution order.
+After extraction, visible render work is organized through `RenderQueue`, `DrawList` and `DrawItem`.
 
 ```cpp
-enum class PreparedFrameGraphNodeKind : uint8_t
+struct DrawItem
 {
-    RenderTargetShadow = 0,
-    RenderTargetGraphics = 1,
-    MainShadow = 2,
-    MainGraphics = 3,
-    MainPresentation = 4
+    SortKey    sortKey;
+    MeshHandle mesh;
+    MaterialHandle material;
+    EntityID   entity;
+
+    BufferHandle gpuVertexBuffer;
+    BufferHandle gpuIndexBuffer;
+    uint32_t     gpuIndexCount   = 0u;
+    uint32_t     gpuVertexStride = 0u;
+
+    uint32_t cbOffset = 0u;
+    uint32_t cbSize   = 0u;
+
+    uint32_t instanceCount = 1u;
+    uint32_t firstInstance = 0u;
 };
 ```
 
 ```cpp
-struct PreparedFrameGraphNode
+struct RenderQueue
 {
-    PreparedFrameGraphNodeKind kind = PreparedFrameGraphNodeKind::MainGraphics;
-    ViewPassExecutionData* view = nullptr;
-    const PreparedExecuteData* executeInput = nullptr;
-    ViewExecutionStats*        statsOutput  = nullptr;
-    uint32_t viewIndex = 0u;
-    bool enabled = false;
-    PreparedFrameGraphResourceRef readResource{};
-    PreparedFrameGraphResourceRef writeResource{};
-    std::vector<uint32_t> dependencies{};
+    DrawList opaque;
+    DrawList alphaCutout;
+    DrawList transparent;
+    DrawList shadow;
+    DrawList ui;
+    DrawList particles;
+
+    std::vector<PerObjectConstants> objectConstants;
 };
 ```
 
-Logical resources are described separately from the pass nodes:
+That means the CPU-side renderer is queue-oriented rather than immediate-command oriented.
 
-```cpp
-enum class PreparedFrameGraphResourceKind : uint8_t
-{
-    None = 0,
-    BackbufferColor = 1,
-    MainSceneColor = 2,
-    ShadowMap = 3,
-    RenderTargetColor = 4
-};
-```
-
-This graph describes pass order, logical read/write relationships and dependencies between nodes. It is not a fully generic modern DX12/Vulkan-style render graph. Instead, it is a prepared pass scheduler tailored to the current renderer. For the existing DX11-oriented architecture, that is the right level of abstraction: explicit enough to make dependencies visible and validation possible, but still simple enough to stay practical.
+The engine first decides what should be rendered in each category, and only later turns that prepared work into backend submission. This keeps frame preparation understandable and keeps execution logic separate from scene analysis.
 
 ---
 
-## Scheduler and CPU Parallelism
+## Frame Stages
 
-The engine uses two layers of CPU work organization.
+The frame pipeline is split into dedicated stage classes:
 
-### 1. SystemScheduler
+- `FrameExtractionStage`
+- `FramePreparationStage`
+- `FrameGraphStage`
+- `FrameExecutionStage`
 
-A lightweight scheduler groups tasks based on declared read/write masks.
+This is the backbone of the renderer.
+
+In practical terms, the stages mean:
+
+### 1. Frame Extraction
+
+Reads world-facing scene state and builds extracted frame data.
+
+### 2. Frame Preparation
+
+Builds frame-local render state, resolves required resources and prepares queue inputs.
+
+### 3. Frame Graph Build
+
+Builds the executable frame graph from the prepared frame state.
+
+### 4. Frame Execution
+
+Submits the prepared frame through the backend interfaces and presents the result.
+
+This staged model is one of the clearest signs that the engine is built with structure rather than with one large mixed render path.
+
+---
+
+## Feature-Oriented Rendering
+
+KROM uses a `FeatureRegistry` to extend renderer behavior through features instead of hardwiring everything into one fixed path.
+
+The `addons/forward` module demonstrates this with `ForwardFeature`.
+
+That gives the renderer room to grow while keeping the core architecture stable:
+
+- core runtime systems stay centralized
+- render behavior can be extended through features
+- pass logic does not need to collapse into one giant renderer file
+
+This is a strong design choice because it keeps the engine modular even as rendering capabilities expand.
+
+---
+
+## Backend Abstraction
+
+Backend execution is isolated behind interfaces such as `IDevice`, `ISwapchain`, `ICommandList` and `IFence`.
 
 ```cpp
-struct TaskDesc
+class IDevice
 {
-    std::string name;
-    uint64_t readMask = 0ull;
-    uint64_t writeMask = 0ull;
-    SystemFn fn;
+public:
+    virtual bool Initialize(const DeviceDesc& desc) = 0;
+    virtual void Shutdown() = 0;
+    virtual void WaitIdle() = 0;
+
+    virtual std::unique_ptr<ISwapchain> CreateSwapchain(const SwapchainDesc& desc) = 0;
+
+    virtual BufferHandle CreateBuffer(const BufferDesc& desc) = 0;
+    virtual TextureHandle CreateTexture(const TextureDesc& desc) = 0;
+    virtual RenderTargetHandle CreateRenderTarget(const RenderTargetDesc& desc) = 0;
+
+    virtual ShaderHandle CreateShaderFromSource(...) = 0;
+    virtual ShaderHandle CreateShaderFromBytecode(...) = 0;
+    virtual PipelineHandle CreatePipeline(const PipelineDesc& desc) = 0;
+
+    virtual std::unique_ptr<ICommandList> CreateCommandList(QueueType queue = QueueType::Graphics) = 0;
+    virtual std::unique_ptr<IFence> CreateFence(uint64_t initialValue = 0u) = 0;
+
+    virtual void BeginFrame() = 0;
+    virtual void EndFrame() = 0;
 };
 ```
 
-This is used to describe the high-level frame build in a controlled way. Independent tasks can be grouped conservatively, while conflicting tasks remain ordered. The scheduler therefore acts as the outer orchestration layer of the frame.
+This boundary is critical:
 
-### 2. JobSystem
+- the renderer decides what work needs to happen
+- the backend decides how that prepared work is executed
 
-For chunked CPU-side work, the engine uses a worker-thread based `ParallelFor`.
+That split prevents API-specific execution details from leaking upward into high-level frame preparation code.
 
-```cpp
-void ParallelFor(size_t itemCount,
-                 const std::function<void(size_t begin, size_t end)>& fn,
-                 size_t minBatchSize = 64u);
-```
+---
 
-This is well suited for culling, gather chunk processing and other data-parallel loops. It allows local parallel speedup without turning the full renderer into a deeply nested job graph.
+## Resource Runtime Layer
 
-The frame build in `EndFrame()` shows how both layers work together:
+KROM separates renderer structure from GPU resource lifecycle through dedicated runtime systems such as:
 
-```cpp
-m_systemScheduler.AddTask({ "Cull Main Graphics",
-    SR_MAIN_VIEW | SR_TRANSFORM,
-    SR_MAIN_VIEW,
-    [this]() { CullPreparedMainViewGraphics(m_renderPipeline.mainView); } });
+- `GpuResourceRuntime`
+- `ShaderRuntime`
+- `MaterialSystem`
+- `PipelineCache`
 
-m_systemScheduler.AddTask({ "Gather Main Graphics",
-    SR_MAIN_VIEW | SR_TRANSFORM,
-    SR_MAIN_VIEW,
-    [this, &resolveShader]() { GatherPreparedMainViewGraphics(resolveShader, m_renderPipeline.mainView); } });
+That matters because shader management, GPU uploads, material preparation and pipeline reuse are handled by dedicated subsystems instead of being scattered across the renderer.
 
-m_systemScheduler.AddTask({ "Build Frame Graph",
-    SR_RENDER_QUEUES | SR_BACKEND,
-    SR_RENDER_QUEUES,
-    [this]() { BuildPreparedFrameGraph(m_renderPipeline); } });
+This leads to a cleaner internal structure:
 
-m_systemScheduler.AddTask({ "Execute Prepared Frame",
-    SR_RENDER_QUEUES | SR_MAIN_VIEW | SR_RTT_VIEWS | SR_TRANSFORM | SR_BACKEND,
-    SR_BACKEND | SR_STATS,
-    [this]() { ExecutePreparedFrame(m_renderPipeline); } });
-```
+- `MaterialSystem` owns material-side state
+- `ShaderRuntime` resolves shader-related runtime work
+- `GpuResourceRuntime` realizes GPU resources
+- `PipelineCache` avoids redundant pipeline creation
 
-This design keeps parallelization under control. The frame has a stable top-level structure, while heavy local loops can still be distributed across worker threads where it makes sense.
+That separation makes the renderer easier to maintain as the engine grows.
+
+---
+
+## Render Graph Layer
+
+KROM includes a dedicated render graph layer under `rendergraph/`.
+
+Key parts include:
+
+- `RenderGraph`
+- `FramePipeline`
+- `CompiledFrame`
+- `ResourceAliaser`
+
+This means the engine does not stop at queue building. It also compiles prepared work into a validated execution structure.
+
+The render graph is responsible for reasoning about:
+
+- pass order
+- resource usage
+- frame compilation
+- executable frame structure
+
+This is the layer where prepared renderer data becomes actual frame execution logic.
+
+---
+
+## Parallelism Model
+
+The engine uses two distinct CPU work systems.
+
+### JobSystem
+
+`jobs::JobSystem` provides worker-thread based execution for local parallel work.
+
+### TaskGraph
+
+`jobs::TaskGraph` provides explicit task dependency management for staged frame execution.
+
+That is the right split.
+
+A renderer benefits from separating:
+
+- coarse frame dependency structure
+- local data-parallel work
+
+This keeps the overall frame stable and understandable while still allowing heavy workloads to scale across worker threads.
 
 ---
 
 ## Why the Architecture Works
 
-The pieces fit together because each layer has a clear job.
+The architecture holds together because every layer has a clear role.
 
-- the **runtime layer** owns the application lifecycle
-- the **ECS** stores the scene state
-- the **renderer** transforms that scene state into frame-local render data
-- the **view pipeline** organizes work per camera or render target
-- the **prepared frame graph** defines execution order and logical dependencies
-- the **backend** performs the actual API-specific rendering
+- `PlatformRenderLoop` owns runtime and platform flow
+- `ecs::World` owns authoritative scene state
+- `Scene` provides higher-level scene convenience
+- extraction converts scene state into render-facing frame data
+- `RenderWorld` and queues organize renderable work
+- `RenderFrameOrchestrator` executes the frame pipeline in explicit stages
+- `rendergraph` compiles prepared work into executable frame structure
+- backend interfaces isolate API-specific execution
 
-This gives the engine a stable shape. New passes, new resource types or new views can be added inside the same structure without tearing apart the runtime or hardwiring more API-specific logic into the high-level renderer.
+That gives the engine a stable shape.
 
----
+The important point is not just that the engine is modular. It is that the boundaries are placed in the right places: runtime is separate from rendering, rendering is separate from live scene state, and backend execution is separate from frame preparation.
 
-## Summary
-
-The architecture can be summarized as follows:
-
-> **A modular ECS-based C++ 3D engine with a view-oriented render pipeline, a prepared pass graph, explicit resource ownership and a backend abstraction centered around a mature DX11 execution path.**
-
-In practice, this means the engine is built around explicit frame preparation instead of immediate rendering, scene data is cleanly separated from backend execution, and rendering work is organized into understandable phases. That makes the codebase suitable for further renderer cleanup, controlled CPU-side optimization and later backend expansion without losing the current DX11-focused stability.
+That is why the architecture remains understandable and extensible even as the renderer becomes more capable.
