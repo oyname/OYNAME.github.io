@@ -12,7 +12,18 @@ For exact types, methods, fields, and function behavior, see the API Reference.
 
 The following diagram shows the practical user-facing path from initialization to the per-frame loop.
 
-![KROM Engine Practical Usage Flow](krom_usage_flow.svg)
+```mermaid
+flowchart TD
+    A[Initialize PlatformRenderLoop] --> B[Create ecs::World]
+    B --> C[Create Scene]
+    C --> D[Create MaterialSystem]
+    D --> E[Configure RenderView]
+    E --> F[Create Camera]
+    F --> G[Create Renderable Entities]
+    G --> H[Update ECS State]
+    H --> I[loop.Tick world, materials, view, timing]
+    I --> H
+```
 
 The short version is:
 
