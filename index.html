@@ -7,6 +7,7 @@
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/showdown/2.1.0/showdown.min.js"></script>
     <script src="scripts/site.js"></script>
+    <link rel="stylesheet" href="styles/site.css">
 
     <style>
         * {
@@ -21,85 +22,12 @@
             background-color: #0a0c10;
         }
 
-        .navbar {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 20px 50px;
-            z-index: 150;
-            background: linear-gradient(to bottom, rgba(0,0,0,0.5), transparent);
-            transition: background 0.3s;
-        }
-
-        .navbar:hover {
-            background: rgba(0,0,0,0.8);
-        }
-
-        .logo {
-            display: flex;
-            align-items: center;
-            width: 236px;
-        }
-
-        .logo img {
-            width: 180px;
-            height: 42px;
-            object-fit: contain;
-            filter: brightness(1) drop-shadow(0 0 10px rgba(0,120,242,0.3));
-        }
-
         .engine-name img {
             width: 330px;
             max-width: 100%;
             height: auto;
             display: block;
             margin-bottom: 20px;
-        }
-        
-        .nav-links {
-            position: absolute;
-            left: 50%;
-            transform: translateX(-50%);
-            display: flex;
-            gap: 30px;
-        }
-
-        .nav-links a {
-            color: white;
-            text-decoration: none;
-            font-size: 14px;
-            font-weight: 500;
-            padding: 5px 0;
-            position: relative;
-            transition: color 0.3s;
-        }
-
-        .nav-links a::after {
-            content: '';
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            width: 0;
-            height: 2px;
-            background: #0078f2;
-            transition: width 0.3s;
-        }
-
-        .nav-links a:hover {
-            color: #0078f2;
-        }
-
-        .nav-links a:hover::after {
-            width: 100%;
-        }
-
-        .navbar-placeholder {
-            width: 275px;
-            visibility: hidden;
         }
 
         .fixed-background {
@@ -473,10 +401,6 @@
                 padding: 20px;
             }
 
-            .nav-links {
-                display: none;
-            }
-
             .hero-content {
                 padding-left: 20px;
                 padding-right: 20px;
@@ -532,7 +456,7 @@
             </div>
 
             <div class="nav-links">
-                <a href="https://oyname.github.io/index.html">Home</a>
+                <a href="https://oyname.github.io/index.html" class="active">Home</a>
                 <a href="https://oyname.github.io/architecture.html">Architecture</a>
                 <a href="https://oyname.github.io/apioverview.html">API Overview</a>
                 <a href="https://oyname.github.io/apiref.html">API Reference</a>
