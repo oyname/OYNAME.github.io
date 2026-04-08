@@ -4,7 +4,7 @@
 Create a minimal window with an event loop.
 
 ## Code Example
-```cpp
+```cpp 
 #include <krom/platform/window.h>
 #include <krom/engine.h>
 
