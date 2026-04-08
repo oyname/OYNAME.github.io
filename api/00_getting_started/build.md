@@ -1,84 +1,273 @@
-# KROM Engine Build, CMake, and Setup Reference
+# KROM Engine: CMake, Build, and Setup
 
 ## Overview
 
-KROM Engine uses CMake as its primary build system. The engine is split into modular targets for the core runtime, platform layers, renderer backends, and rendering features. Applications and example programs are built by linking the required targets together.
+KROM Engine uses CMake to organize and build the project.
 
-This structure keeps the engine modular and makes it possible to build only the components required for a specific backend or platform.
+The engine is split into separate modules instead of being built as one large block. That makes it easier to maintain different platform layers, renderer backends, and rendering features without mixing everything together.
+
+In practice, the build setup is based on these parts:
+
+- `engine_core` for the shared engine systems
+- a platform layer such as `engine_platform_win32`
+- a renderer backend such as `engine_dx11` or `engine_opengl`
+- a rendering feature package such as `engine_forward`
+- example applications that combine those parts
+
+A useful way to think about it is:
+
+```text
+application
+    -> renderer backend
+    -> rendering feature
+    -> platform layer
+    -> engine core
+```
 
 ---
 
-## Requirements
+## What you need
 
-### Required Tools
+Before building the engine, make sure the required tools are installed.
+
+### Required
 
 - CMake 3.22 or newer
-- A C++20-capable compiler
+- a C++20-capable compiler
 
-### Supported Toolchains
+### Windows setup
 
-#### Windows
+For Windows development, the normal setup is:
+
 - Visual Studio 2022 or newer
-- Ninja is supported
-- Win32 platform layer is available
-- Direct3D 11 and OpenGL backends are supported
+- Desktop development with C++
+- Windows SDK
+- CMake
 
-#### Linux
-- Ninja or Make-based CMake generators
-- GLFW platform layer is supported when GLFW headers and libraries are available
-- OpenGL backend is supported
+This is enough for the Win32 platform layer and the Direct3D 11 backend.
 
-### External Dependencies
+### Optional
 
-- Threads package via CMake:
-  - `find_package(Threads REQUIRED)`
-- GLFW is optional and only required when building the GLFW platform layer
-- Direct3D 11 uses system-provided Windows SDK components
-- OpenGL uses platform-provided OpenGL libraries
+- Ninja, if you prefer Ninja instead of Visual Studio as the CMake generator
+- GLFW, if you want to use the GLFW platform layer and the required headers and libraries are available on your system
 
 ---
 
-## Quick Start
+## Project structure in build terms
 
-### Configure and build with Visual Studio
+The build system defines several targets. The most important ones are:
+
+### `engine_core`
+
+This is the main engine library.
+
+It contains the shared engine code, including:
+
+- ECS
+- scene systems
+- asset pipeline
+- collision queries
+- renderer abstraction
+- render graph
+- renderer runtime systems
+
+This is the base module that the other engine targets depend on.
+
+---
+
+### `engine_platform_win32`
+
+This is the Windows platform layer.
+
+It provides the Win32-specific code for:
+
+- window creation
+- input handling
+- threading integration
+
+This target is used for native Windows builds.
+
+---
+
+### `engine_platform_glfw`
+
+This is the GLFW-based platform layer.
+
+It provides:
+
+- window creation through GLFW
+- input handling through GLFW
+- platform integration through GLFW
+
+This target is only available when GLFW is found during CMake configuration.
+
+---
+
+### `engine_dx11`
+
+This is the Direct3D 11 renderer backend.
+
+It contains the DX11-specific renderer implementation and is only available on Windows.
+
+---
+
+### `engine_opengl`
+
+This is the OpenGL renderer backend.
+
+It contains the OpenGL-specific renderer implementation.
+
+---
+
+### `engine_forward`
+
+This target contains the forward-rendering feature set used by the render-loop examples.
+
+---
+
+### `engine_null`
+
+This is a null or fallback addon. It is useful for tests, headless scenarios, or cases where a non-rendering backend is needed.
+
+---
+
+## The example programs
+
+In the current setup, the project builds two main example applications.
+
+### `engine_dx11_render_loop`
+
+This is the Direct3D 11 render-loop example.
+
+It is built from:
+
+```text
+examples/dx11_render_loop.cpp
+```
+
+It uses:
+
+- `engine_core`
+- `engine_forward`
+- `engine_platform_win32`
+- `engine_dx11`
+
+---
+
+### `engine_opengl_render_loop`
+
+This is the OpenGL render-loop example.
+
+It is built from:
+
+```text
+examples/opengl_render_loop.cpp
+```
+
+On Windows, it usually uses:
+
+- `engine_core`
+- `engine_forward`
+- `engine_platform_win32`
+- `engine_opengl`
+
+On GLFW-based setups, it can use:
+
+- `engine_core`
+- `engine_forward`
+- `engine_platform_glfw`
+- `engine_opengl`
+
+---
+
+## Basic build flow
+
+The build process happens in two steps.
+
+### 1. Configure
+
+This tells CMake to read `CMakeLists.txt`, resolve options, detect available dependencies, and generate build files.
+
+```bash
+cmake -S . -B build
+```
+
+### 2. Build
+
+This tells the selected build tool to compile the project.
+
+For Visual Studio:
+
+```bash
+cmake --build build --config Debug
+```
+
+For Release:
+
+```bash
+cmake --build build --config Release
+```
+
+---
+
+## What `-S` and `-B` mean
+
+These two options confuse many people at the beginning.
+
+```bash
+cmake -S . -B build
+```
+
+means:
+
+- `-S .` → use the current folder as the source directory
+- `-B build` → place generated build files into the `build` folder
+
+So CMake reads the project from the current folder and writes all generated build output into `build`.
+
+This is the normal and clean way to work with CMake.
+
+---
+
+## Visual Studio vs Ninja
+
+KROM Engine can be built with different generators.
+
+### Visual Studio
+
+Visual Studio is a multi-configuration generator. That means Debug and Release can exist in the same build tree.
+
+Typical commands:
 
 ```bash
 cmake -S . -B build
 cmake --build build --config Debug
+cmake --build build --config Release
 ```
 
-### Configure and build with Ninja
+### Ninja
+
+Ninja is usually used as a single-configuration generator. That means the build type is chosen during configuration.
+
+Typical commands:
 
 ```bash
 cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Debug
 cmake --build build
 ```
 
-### Build configurations
-
-With multi-config generators such as Visual Studio, the active configuration is selected with:
-
-```bash
-cmake --build build --config Debug
-cmake --build build --config Release
-```
-
-With single-config generators such as Ninja, the build type is selected during configuration:
-
-```bash
-cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Debug
-```
+If you use Ninja and want a Release build, configure a Release build tree explicitly.
 
 ---
 
-## Output Layout
+## Output directories
 
-The default output directories are:
+The engine uses fixed output folders for build artifacts.
 
-- Executables: `build/bin`
-- Static and shared libraries: `build/lib`
+- executables go to `build/bin`
+- libraries go to `build/lib`
 
-These are controlled by:
+This is controlled by these CMake settings:
 
 ```cmake
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
@@ -86,13 +275,15 @@ set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 ```
 
+This makes it easier to find the built examples and libraries after compilation.
+
 ---
 
-## Core CMake Options
+## Main CMake options
 
 ### `KROM_USE_GLFW`
 
-Enables the GLFW platform layer when GLFW headers and libraries are found.
+This option enables the GLFW platform layer when GLFW can be found.
 
 - Type: `BOOL`
 - Default: `ON`
@@ -103,121 +294,78 @@ Example:
 cmake -S . -B build -DKROM_USE_GLFW=OFF
 ```
 
+---
+
 ### `KROM_BUILD_DX11`
 
-Controls whether the Direct3D 11 addon is built.
+This option controls whether the Direct3D 11 addon is built.
 
-- Type: `BOOL`
-- Availability: Windows only
-
-### `KROM_BUILD_OPENGL`
-
-Controls whether the OpenGL addon is built.
-
-- Type: `BOOL`
+It is mainly relevant on Windows.
 
 Example:
 
 ```bash
-cmake -S . -B build -DKROM_BUILD_DX11=ON -DKROM_BUILD_OPENGL=ON
+cmake -S . -B build -DKROM_BUILD_DX11=ON
 ```
 
-Only options that are actually defined in the active CMake configuration should be treated as supported build switches.
+---
+
+### `KROM_BUILD_OPENGL`
+
+This option controls whether the OpenGL addon is built.
+
+Example:
+
+```bash
+cmake -S . -B build -DKROM_BUILD_OPENGL=ON
+```
 
 ---
 
-## Target Structure
+### Example: build both DX11 and OpenGL
 
-### `engine_core`
-
-The main engine library.
-
-It contains the platform-independent core systems, including:
-
-- ECS
-- scene systems
-- asset pipeline
-- collision queries
-- renderer abstraction
-- render graph
-- renderer runtime orchestration
-- platform-independent utility systems
-
-This target is the base dependency for all platform layers and renderer backends.
+```bash
+cmake -S . -B build -DKROM_BUILD_DX11=ON -DKROM_BUILD_OPENGL=ON
+cmake --build build --config Debug
+```
 
 ---
 
-### `engine_platform_win32`
+## What `target_link_libraries(...)` means in this project
 
-Windows-specific platform layer.
+In CMake, targets are connected to the libraries they use.
 
-It provides:
+Example:
 
-- window creation and management on Win32
-- input handling
-- Win32 threading integration
+```cmake
+target_link_libraries(engine_dx11_render_loop PRIVATE
+    engine_core
+    engine_forward
+    engine_platform_win32
+)
+```
 
-This target is intended for native Windows builds.
+This means that `engine_dx11_render_loop` is built with access to those engine modules.
 
----
+In other words, the example program can use the code contained in those libraries.
 
-### `engine_platform_glfw`
-
-GLFW-based platform layer.
-
-It provides:
-
-- cross-platform window creation
-- input handling through GLFW
-- GLFW thread/platform integration
-
-This target is only available when GLFW is found during configuration.
+For this project, that is the most useful way to read it. You do not need deeper linker details at the beginning.
 
 ---
 
-### `engine_dx11`
+## Self-registering addons
 
-Direct3D 11 renderer backend.
+Some addons register themselves automatically through static initialization.
 
-This addon provides the Direct3D 11 implementation used by the renderer abstraction layer. It is only available on Windows.
+Because of that, a normal link step is not always enough. A linker may remove code it considers unused, which can break automatic registration.
 
----
-
-### `engine_opengl`
-
-OpenGL renderer backend.
-
-This addon provides the OpenGL implementation used by the renderer abstraction layer.
-
----
-
-### `engine_forward`
-
-Forward-rendering feature addon.
-
-This target adds the forward rendering pipeline and feature registration required by the example render loop programs.
-
----
-
-### `engine_null`
-
-Null backend or fallback addon.
-
-This target is useful for testing, headless execution, or cases where a renderer backend is intentionally replaced with a non-rendering implementation.
-
----
-
-## Self-Registering Addons
-
-Some engine addons register themselves through static initialization. In those cases, linking the addon with `target_link_libraries(...)` alone may not be sufficient, because the linker can discard unreferenced object files from static libraries.
-
-To force inclusion of self-registering addons, KROM Engine uses:
+To avoid that, the engine uses this helper:
 
 ```cmake
 krom_link_self_registering_addon(target addon_target)
 ```
 
-### Example
+Example:
 
 ```cmake
 add_executable(my_app src/main.cpp)
@@ -231,83 +379,15 @@ target_link_libraries(my_app PRIVATE
 krom_link_self_registering_addon(my_app engine_dx11)
 ```
 
-This helper applies the platform-specific linker options required to keep the addon registration code in the final binary.
+In simple terms, this makes sure the backend addon is really included in the final executable.
 
 ---
 
-## Example Targets
+## Adding your own application
 
-The example programs included in the engine build are backend-specific render-loop applications.
+If you want to build your own application on top of the engine, the pattern is the same as in the examples.
 
-### `engine_dx11_render_loop`
-
-Minimal render-loop example for the Direct3D 11 backend.
-
-Dependencies:
-
-- `engine_core`
-- `engine_forward`
-- `engine_platform_win32`
-- `engine_dx11`
-
-Source file:
-
-```text
-examples/dx11_render_loop.cpp
-```
-
-This target is only available when both `engine_dx11` and `engine_platform_win32` are available.
-
----
-
-### `engine_opengl_render_loop`
-
-Minimal render-loop example for the OpenGL backend.
-
-Dependencies depend on platform:
-
-#### On Windows
-- `engine_core`
-- `engine_forward`
-- `engine_platform_win32`
-- `engine_opengl`
-
-#### On GLFW-based builds
-- `engine_core`
-- `engine_forward`
-- `engine_platform_glfw`
-- `engine_opengl`
-
-Source file:
-
-```text
-examples/opengl_render_loop.cpp
-```
-
-This target is built when the OpenGL addon is available and a compatible platform layer is present.
-
----
-
-## Asset Deployment for Examples
-
-The render-loop example targets copy the `assets` directory into the executable output directory after build.
-
-This is typically implemented with a post-build step such as:
-
-```cmake
-add_custom_command(TARGET engine_dx11_render_loop POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy_directory
-        ${CMAKE_CURRENT_SOURCE_DIR}/assets
-        $<TARGET_FILE_DIR:engine_dx11_render_loop>/assets)
-```
-
-The same pattern is used for the OpenGL example target.
-
----
-
-## Integrating the Engine Into Your Own Project
-
-### Direct3D 11 application on Windows
+### Windows + Direct3D 11
 
 ```cmake
 add_executable(my_game src/main.cpp)
@@ -321,11 +401,16 @@ target_link_libraries(my_game PRIVATE
 krom_link_self_registering_addon(my_game engine_dx11)
 ```
 
-This produces a Windows application using the engine core, the forward feature set, the Win32 platform layer, and the Direct3D 11 backend.
+This gives your application:
+
+- the engine core
+- the Win32 platform layer
+- the forward rendering feature
+- the DX11 backend
 
 ---
 
-### OpenGL application on Windows
+### Windows + OpenGL
 
 ```cmake
 add_executable(my_game src/main.cpp)
@@ -341,7 +426,7 @@ krom_link_self_registering_addon(my_game engine_opengl)
 
 ---
 
-### OpenGL application with GLFW
+### GLFW + OpenGL
 
 ```cmake
 add_executable(my_game src/main.cpp)
@@ -357,32 +442,94 @@ krom_link_self_registering_addon(my_game engine_opengl)
 
 ---
 
-## Backend Selection
+## Asset copy step in the examples
 
-The current example programs are built as backend-specific executables.
+The render-loop example targets copy the `assets` directory into the executable output folder after the build.
 
-- `engine_dx11_render_loop` links only the Direct3D 11 backend
-- `engine_opengl_render_loop` links only the OpenGL backend
+That is why the examples can usually run directly after compilation without manually moving assets.
 
-This keeps the example binaries explicit and avoids ambiguity during debugging.
+The CMake pattern looks like this:
 
-If an application is intended to support runtime backend selection, that behavior must be implemented explicitly in application code and in the way renderer backends are linked.
+```cmake
+add_custom_command(TARGET engine_dx11_render_loop POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+        ${CMAKE_CURRENT_SOURCE_DIR}/assets
+        $<TARGET_FILE_DIR:engine_dx11_render_loop>/assets)
+```
+
+The OpenGL example uses the same idea.
 
 ---
 
-## Recommended Documentation Layout
+## How to read the main `CMakeLists.txt`
 
-For engine documentation, the CMake and build reference should be kept separate from the gameplay or rendering API reference.
+Do not try to understand the whole file from top to bottom in one pass.
 
-A practical structure is:
+A better reading order is:
 
-- Build system overview
-- Requirements
-- Quick start
-- CMake options
-- Target reference
-- Addon registration
-- Example targets
-- Application integration
+1. project setup
+2. `engine_core`
+3. platform layers
+4. addons
+5. example targets
 
-This keeps the build reference technical, compact, and directly usable.
+That order matches the actual dependency structure and makes the file much easier to follow.
+
+---
+
+## Minimal mental model
+
+If you only want the practical picture, this is enough:
+
+### DX11 example
+
+```text
+engine_dx11_render_loop
+    -> engine_dx11
+    -> engine_forward
+    -> engine_platform_win32
+    -> engine_core
+```
+
+### OpenGL example
+
+```text
+engine_opengl_render_loop
+    -> engine_opengl
+    -> engine_forward
+    -> engine_platform_win32 or engine_platform_glfw
+    -> engine_core
+```
+
+That model is accurate enough for everyday work and simple enough to keep in mind.
+
+---
+
+## Recommended workflow
+
+A practical workflow for working on the engine is:
+
+1. configure the project
+2. build Debug
+3. run one example
+4. only then change CMake structure if needed
+5. after CMake changes, reconfigure
+6. if CMake starts behaving inconsistently, clear the build directory and configure again
+
+That avoids a lot of unnecessary confusion while changing targets or file lists.
+
+---
+
+## Summary
+
+The important points are simple:
+
+- CMake organizes and generates the build
+- the engine is split into modules instead of one large target
+- `engine_core` is the base of the engine
+- platform layers handle OS-specific integration
+- DX11 and OpenGL are separate renderer backends
+- example programs are small applications that combine the required modules
+- self-registering addons must be linked with the helper function, not only with a normal library link
+
+That is the build setup in practical terms.
