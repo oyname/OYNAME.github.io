@@ -10,27 +10,27 @@
 - [System](01_core/system)
 
 # Scene Management
-- [Transform](02_scene/transform.md)
-- [Hierarchy](02_scene/hierarchy.md)
-- [Bounds](02_scene/bounds.md)
+- [Transform](02_scene/transform)
+- [Hierarchy](02_scene/hierarchy)
+- [Bounds](02_scene/bounds)
 
 # Renderer
-- [Device](03_renderer/device.md)
-- [Material](03_renderer/material.md)
-- [RenderGraph](03_renderer/rendergraph.md)
-- [Pipeline](03_renderer/pipeline.md)
+- [Device](03_renderer/device)
+- [Material](03_renderer/material)
+- [RenderGraph](03_renderer/rendergraph)
+- [Pipeline](03_renderer/pipeline)
 
 # Platform Layer
-- [Window](04_platform/window.md)
-- [Input](04_platform/input.md)
-- [Filesystem](04_platform/filesystem.md)
+- [Window](04_platform/window)
+- [Input](04_platform/input)
+- [Filesystem](04_platform/filesystem)
 
 # Assets
-- [Pipeline](05_assets/pipeline.md)
-- [Mesh](05_assets/mesh.md)
-- [Texture](05_assets/texture.md)
+- [Pipeline](05_assets/pipeline)
+- [Mesh](05_assets/mesh)
+- [Texture](05_assets/texture)
 
 # Advanced
-- [Job System](06_advanced/jobs.md)
-- [Serialization](06_advanced/serialization.md)
-- [Custom AddOns](06_advanced/custom_addons.md)
+- [Job System](06_advanced/jobs)
+- [Serialization](06_advanced/serialization)
+- [Custom AddOns](06_advanced/custom_addons)
