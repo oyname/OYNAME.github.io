@@ -4,10 +4,10 @@
 - [Hello Window](00_getting_started/hello_window)
 
 # Core API
-- [World](01_core/world.md)
-- [Entity](01_core/entity.md)
-- [Component](01_core/component.md)
-- [System](01_core/system.md)
+- [World](01_core/world)
+- [Entity](01_core/entity)
+- [Component](01_core/component)
+- [System](01_core/system)
 
 # Scene Management
 - [Transform](02_scene/transform.md)
