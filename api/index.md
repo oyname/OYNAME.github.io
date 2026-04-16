@@ -34,3 +34,6 @@
 - [Job System](06_advanced/jobs)
 - [Serialization](06_advanced/serialization)
 - [Custom AddOns](06_advanced/custom_addons)
+
+# Shader
+- [Shader System](07 shader/shader)
