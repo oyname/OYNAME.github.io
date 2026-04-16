@@ -1,11 +1,5 @@
 # KROM Engine Shader System API Reference
 
-Version: extracted from current project source  
-Scope: shader assets, compilation targets, variant system, binding model, runtime material/shader preparation  
-Audience: engine/runtime developers
-
----
-
 ## 1. Purpose
 
 The KROM shader system is split into five layers:
