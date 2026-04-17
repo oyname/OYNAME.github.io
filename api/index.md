@@ -33,6 +33,6 @@
 # Advanced
 - [Job System](06_advanced/jobs)
 - [Serialization](06_advanced/serialization)
-- [Custom AddOns](06_advanced/custom_addons)
-- [AddOn API](08_addon/addon)
-- [Shader](07_shader/shader)
+- [AddOn API Reference](06_advanced/addon_ref)
+- [AddOn Implementation](06_advanced/custom_addons)
+- [Shader](06_advanced/shader_system)
